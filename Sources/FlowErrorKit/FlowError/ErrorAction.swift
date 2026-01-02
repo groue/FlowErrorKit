@@ -1,3 +1,5 @@
+import SwiftUI
+
 // `ErrorAction` is a class because making it a struct would have made them less
 // easy to use with SwiftUI. `ForEach` likes to iterate collections of
 // `Identifiable` values. `Identifiable` conformance is free for classes, but it
@@ -31,25 +33,62 @@
 ///
 /// - ``ErrorActionRole``
 public final class ErrorAction: Identifiable, Sendable {
-    /// The action title ("Cancel", "Retry", etc.)
-    public let title: String
-    
     /// The action role.
     public let role: ErrorActionRole?
+    
+    let title: TextContent
     
     // MUST NOT BE PUBLIC, because actions MUST be run by `FlowError`.
     /// The function called when the user selects the action.
     let perform: @MainActor () -> Void
     
-    /// Creates an `ErrorAction`.
-    public init(
-        title: String,
+    init(
+        title: TextContent,
         role: ErrorActionRole? = nil,
         perform: @escaping @MainActor () -> Void
     ) {
         self.title = title
         self.role = role
         self.perform = perform
+    }
+    
+    /// Creates an `ErrorAction` with a title without localization.
+    @_disfavoredOverload
+    public convenience init(
+        _ title: String,
+        role: ErrorActionRole? = nil,
+        perform: @escaping @MainActor () -> Void
+    ) {
+        self.init(title: .verbatim(title), role: role, perform: perform)
+    }
+    
+    /// Creates an `ErrorAction` with a title without localization.
+    public convenience init(
+        verbatim title: String,
+        role: ErrorActionRole? = nil,
+        perform: @escaping @MainActor () -> Void
+    ) {
+        self.init(title: .verbatim(title), role: role, perform: perform)
+    }
+    
+    /// Creates an `ErrorAction` with a localized title.
+    public convenience init(
+        _ title: LocalizedStringResource,
+        role: ErrorActionRole? = nil,
+        perform: @escaping @MainActor () -> Void
+    ) {
+        self.init(title: .resource(title), role: role, perform: perform)
+    }
+    
+    /// The title for the action, for the given locale.
+    public func title(locale: Locale = .current) -> String {
+        switch title {
+        case .verbatim(let title):
+            return title
+        case .resource(var title):
+            title.locale = locale
+            return String(localized: title)
+        }
     }
 }
 
@@ -62,4 +101,16 @@ public final class ErrorAction: Identifiable, Sendable {
 /// - ``SwiftUI/ButtonRole/init(role:)``
 public enum ErrorActionRole: Sendable {
     case destructive
+}
+
+extension Text {
+    /// Creates a text view that displays the title of the action.
+    public init(_ errorAction: ErrorAction) {
+        switch errorAction.title {
+        case .verbatim(let title):
+            self.init(title)
+        case .resource(let title):
+            self.init(title)
+        }
+    }
 }

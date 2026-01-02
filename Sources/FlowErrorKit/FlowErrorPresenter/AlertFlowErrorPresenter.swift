@@ -41,22 +41,26 @@ public struct AlertFlowErrorPresenter {
             }
             
             ForEach(flowError.supplementaryActions) { action in
-                Button(action.title, role: action.role.map(ButtonRole.init(role:))) {
+                Button(role: action.role.map(ButtonRole.init(role:))) {
                     // Run user code on the next runloop cycle, so that it can
                     // immediately present another error.
                     DispatchQueue.main.async {
                         flowError.performAction(action)
                     }
+                } label: {
+                    Text(action)
                 }
             }
             
             if let retryAction = flowError.retryAction {
-                Button(retryAction.title, role: retryAction.role.map(ButtonRole.init(role:))) {
+                Button(role: retryAction.role.map(ButtonRole.init(role:))) {
                     // Run user code on the next runloop cycle, so that it can
                     // immediately present another error.
                     DispatchQueue.main.async {
                         flowError.performAction(retryAction)
                     }
+                } label: {
+                    Text(retryAction)
                 }
             }
         }

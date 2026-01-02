@@ -59,41 +59,51 @@ struct FlowErrorTests {
     
     @Test
     func retryActionProperty() {
+        let en = Locale(identifier: "en")
+        let fr = Locale(identifier: "fr")
+        
         var flowError = FlowError(error: TestError())
         #expect(flowError.retryAction == nil, "No retry action by default")
         
         flowError = flowError.onRetry { }
         #expect(flowError.retryAction != nil)
-        
-        flowError = flowError.onRetry("Title 1") { }
-        #expect(flowError.retryAction?.title == "Title 1", "A titled retry action changes the retry title")
+        #expect(flowError.retryAction?.title(locale: en) == "Retry", "The default title is Retry")
+        #expect(flowError.retryAction?.title(locale: fr) == "Réessayer", "The default title is Retry")
+
+        flowError = flowError.onRetry(verbatim: "Title 1") { }
+        #expect(flowError.retryAction?.title(locale: en) == "Title 1", "A titled retry action changes the retry title")
         
         flowError = flowError.onRetry { }
-        #expect(flowError.retryAction?.title == "Title 1", "An untitled retry action does not change the retry title")
+        #expect(flowError.retryAction?.title(locale: en) == "Title 1", "An untitled retry action does not change the retry title")
         
-        flowError = flowError.onRetry("Title 2") { }
-        #expect(flowError.retryAction?.title == "Title 2", "A titled retry action changes the retry title")
+        flowError = flowError.onRetry(LocalizedStringResource("Give Up", bundle: .module)) { }
+        #expect(flowError.retryAction?.title(locale: en) == "Give Up", "A titled retry action changes the retry title")
+        #expect(flowError.retryAction?.title(locale: fr) == "Laisser tomber", "A titled retry action changes the retry title")
     }
     
     @Test
     func supplementaryActionsProperty() {
+        let en = Locale(identifier: "en")
+        let fr = Locale(identifier: "fr")
+        
         var flowError = FlowError(error: TestError())
         #expect(flowError.supplementaryActions.isEmpty, "No supplementary action by default")
         
-        flowError = flowError.appendingAction(ErrorAction(title: "Title 1", perform: { }))
+        flowError = flowError.appendingAction(ErrorAction(verbatim: "Title 1", perform: { }))
         #expect(flowError.supplementaryActions.count == 1)
         #expect(flowError.supplementaryActions.last?.role == nil)
-        #expect(flowError.supplementaryActions.last?.title == "Title 1")
+        #expect(flowError.supplementaryActions.last?.title(locale: en) == "Title 1")
         
-        flowError = flowError.appendingAction("Title 2", perform: { })
+        flowError = flowError.appendingAction(verbatim: "Title 2", perform: { })
         #expect(flowError.supplementaryActions.count == 2)
         #expect(flowError.supplementaryActions.last?.role == nil)
-        #expect(flowError.supplementaryActions.last?.title == "Title 2")
+        #expect(flowError.supplementaryActions.last?.title(locale: en) == "Title 2")
         
-        flowError = flowError.appendingAction("Title 3", role: .destructive, perform: { })
+        flowError = flowError.appendingAction(LocalizedStringResource("Give Up", bundle: .module), role: .destructive, perform: { })
         #expect(flowError.supplementaryActions.count == 3)
         #expect(flowError.supplementaryActions.last?.role == .destructive)
-        #expect(flowError.supplementaryActions.last?.title == "Title 3")
+        #expect(flowError.supplementaryActions.last?.title(locale: en) == "Give Up")
+        #expect(flowError.supplementaryActions.last?.title(locale: fr) == "Laisser tomber")
     }
     
     @Test
@@ -204,7 +214,7 @@ struct FlowErrorTests {
     @Test
     func perform_supplementary_action() throws {
         var executions: [String] = []
-        let action = ErrorAction(title: "Other") { executions.append("other") }
+        let action = ErrorAction(verbatim: "Other") { executions.append("other") }
         let flowError = FlowError(error: TestError())
             .finally { executions.append("finally 1") }
             .onCancel { executions.append("cancel 1 \($0)") }

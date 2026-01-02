@@ -364,7 +364,6 @@ extension FlowError {
     
     // This overload is necessary because a default argument for title is
     // not enough for `FlowError(...).onRetry(function)` to compile.
-    
     /// Returns a flow error that executes the provided closure when the
     /// error is retried.
     ///
@@ -374,7 +373,7 @@ extension FlowError {
         _ perform: @escaping @MainActor () -> Void
     ) -> FlowError {
         onRetry(
-            retryAction?.title ?? String(localized: .retry, bundle: .module),
+            retryAction?.title ?? .resource(.retry),
             perform)
     }
     
@@ -384,8 +383,8 @@ extension FlowError {
     /// - parameter title: The title of the "Retry" button.
     /// - parameter perform: A closure called when the user hits the
     /// "Retry" button.
-    public func onRetry(
-        _ title: String,
+    func onRetry(
+        _ title: TextContent,
         _ perform: @escaping @MainActor () -> Void
     ) -> FlowError {
         let oldRetryAction = self.retryAction
@@ -400,6 +399,46 @@ extension FlowError {
             supplementaryActions: self.supplementaryActions,
             finally: self.finally,
             executionToken: self.executionToken) // share the execution token
+    }
+    
+    /// Returns a flow error that executes the provided closure when the
+    /// error is retried, with a title without localization.
+    ///
+    /// - parameter title: The title of the "Retry" button.
+    /// - parameter perform: A closure called when the user hits the
+    /// "Retry" button.
+    @_disfavoredOverload
+    public func onRetry(
+        _ title: String,
+        _ perform: @escaping @MainActor () -> Void
+    ) -> FlowError {
+        onRetry(.verbatim(title), perform)
+    }
+    
+    /// Returns a flow error that executes the provided closure when the
+    /// error is retried, with a title without localization.
+    ///
+    /// - parameter title: The title of the "Retry" button.
+    /// - parameter perform: A closure called when the user hits the
+    /// "Retry" button.
+    public func onRetry(
+        verbatim title: String,
+        _ perform: @escaping @MainActor () -> Void
+    ) -> FlowError {
+        onRetry(.verbatim(title), perform)
+    }
+    
+    /// Returns a flow error that executes the provided closure when the
+    /// error is retried, with a localized title.
+    ///
+    /// - parameter title: The title of the "Retry" button.
+    /// - parameter perform: A closure called when the user hits the
+    /// "Retry" button.
+    public func onRetry(
+        _ title: LocalizedStringResource,
+        _ perform: @escaping @MainActor () -> Void
+    ) -> FlowError {
+        onRetry(TextContent.resource(title), perform)
     }
     
     /// Returns a flow error without any retry action (useful for
@@ -418,7 +457,25 @@ extension FlowError {
             executionToken: self.executionToken) // share the execution token
     }
     
-    /// Returns a flow error with an extra supplementary action.
+    /// Returns a flow error with an extra supplementary action, and a title
+    /// without localization.
+    ///
+    /// This method is useful for permission denied errors: add an
+    /// "Open Settings" action.
+    ///
+    /// If the user selects this action, the cancel action is run with reason
+    /// ``CancelErrorReason/supplementaryActionPerformed``.
+    @_disfavoredOverload
+    public func appendingAction(
+        _ title: String,
+        role: ErrorActionRole? = nil,
+        perform: @escaping @MainActor () -> Void
+    ) -> FlowError {
+        appendingAction(ErrorAction(title, role: role, perform: perform))
+    }
+    
+    /// Returns a flow error with an extra supplementary action, and a title
+    /// without localization.
     ///
     /// This method is useful for permission denied errors: add an
     /// "Open Settings" action.
@@ -426,14 +483,27 @@ extension FlowError {
     /// If the user selects this action, the cancel action is run with reason
     /// ``CancelErrorReason/supplementaryActionPerformed``.
     public func appendingAction(
-        _ title: String,
+        verbatim title: String,
         role: ErrorActionRole? = nil,
         perform: @escaping @MainActor () -> Void
     ) -> FlowError {
-        appendingAction(ErrorAction(
-            title: title,
-            role: role,
-            perform: perform))
+        appendingAction(ErrorAction(title, role: role, perform: perform))
+    }
+    
+    /// Returns a flow error with an extra supplementary action, and a
+    /// localized title.
+    ///
+    /// This method is useful for permission denied errors: add an
+    /// "Open Settings" action.
+    ///
+    /// If the user selects this action, the cancel action is run with reason
+    /// ``CancelErrorReason/supplementaryActionPerformed``.
+    public func appendingAction(
+        _ title: LocalizedStringResource,
+        role: ErrorActionRole? = nil,
+        perform: @escaping @MainActor () -> Void
+    ) -> FlowError {
+        appendingAction(ErrorAction(title, role: role, perform: perform))
     }
     
     /// Returns a flow error with an extra supplementary action.

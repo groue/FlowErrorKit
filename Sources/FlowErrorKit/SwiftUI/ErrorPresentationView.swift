@@ -233,14 +233,18 @@ private struct LegacyErrorPresentationView<Label: View, Description: View, Actio
         }
         
         func supplementaryActionButton(_ action: ErrorAction) -> some View {
-            Button(action.title, role: action.role.map(ButtonRole.init(role:))) {
+            Button(role: action.role.map(ButtonRole.init(role:))) {
                 flowError.performAction(action)
+            } label: {
+                Text(action)
             }
         }
         
         func retryButton(_ action: ErrorAction) -> some View {
-            Button(action.title, role: action.role.map(ButtonRole.init(role:))) {
+            Button(role: action.role.map(ButtonRole.init(role:))) {
                 flowError.performAction(action)
+            } label: {
+                Text(action)
             }
         }
         

@@ -122,9 +122,13 @@ There are two exceptions:
 - ``onCancel(_:_:)-(String,_)``
 - ``onCancel(verbatim:_:)-(String,_)``
 - ``onRetry(_:)``
-- ``onRetry(_:_:)``
+- ``onRetry(_:_:)-(LocalizedStringResource,_)``
+- ``onRetry(_:_:)-(String,_)``
+- ``onRetry(verbatim:_:)``
 - ``appendingAction(_:)``
-- ``appendingAction(_:role:perform:)``
+- ``appendingAction(_:role:perform:)-(LocalizedStringResource,_,_)``
+- ``appendingAction(_:role:perform:)-(String,_,_)``
+- ``appendingAction(verbatim:role:perform:)``
 - ``droppingRetryAction()``
 - ``finally(_:)``
 - ``withError(_:)``
