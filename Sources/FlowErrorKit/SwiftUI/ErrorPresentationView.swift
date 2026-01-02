@@ -182,26 +182,13 @@ private struct LegacyErrorPresentationView<Label: View, Description: View, Actio
     var cancelActionVisible: Bool
     var footer: Footer
     
-    public struct Label: View {
-        var title: String
-        var systemImage: String
-        
-        public var body: some View {
-            SwiftUI.Label {
-                Text(title)
-            } icon: {
-                Image(systemName: systemImage)
-            }
-        }
-    }
+    public typealias Label = ErrorPresentationLabel
     
     public struct Description: View {
-        var message: String?
+        var errorPresentation: ErrorPresentation
         
         public var body: some View {
-            if let message {
-                Text(message)
-            }
+            Text(messageFor: errorPresentation)
         }
     }
     
@@ -274,13 +261,11 @@ private struct LegacyErrorPresentationView<Label: View, Description: View, Actio
     }
     
     func label() -> Self.Label {
-        Label(
-            title: errorPresentation.title,
-            systemImage: errorPresentation.systemImage)
+        ErrorPresentationLabel(errorPresentation)
     }
     
     func description() -> Self.Description {
-        Description(message: errorPresentation.message)
+        Description(errorPresentation: errorPresentation)
     }
     
     func actions() -> Self.Actions {

@@ -83,15 +83,15 @@ public protocol FlowErrorHandler {
     ///             // let the user grant the required permissions.
     ///             let presentedFlowError = flowError
     ///                 .droppingRetryAction()
-    ///                 .appendingAction(String(localized: "Open Settings")) {
+    ///                 .appendingAction("Open Settings") {
     ///                     if let url = URL(string: UIApplication.openSettingsURLString) {
     ///                         UIApplication.shared.open(url)
     ///                     }
     ///                 }
     ///
     ///             return .present(ErrorPresentation(
-    ///                 title: String(localized: "Permission Required"),
-    ///                 message: String(localized: "Please grant access to your location in the Settings application."),
+    ///                 title: "Permission Required",
+    ///                 message: "Please grant access to your location in the Settings application.",
     ///                 flowError: presentedFlowError))
     ///
     ///         case CLError.geocodeCanceled:

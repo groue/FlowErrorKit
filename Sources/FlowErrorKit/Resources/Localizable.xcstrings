@@ -1,6 +1,17 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@\n%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@\n%2$@"
+          }
+        }
+      },
+      "shouldTranslate" : false
+    },
     "An Error Occurred" : {
       "extractionState" : "manual",
       "localizations" : {

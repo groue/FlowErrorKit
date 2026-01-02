@@ -103,7 +103,7 @@ import SwiftUI
     public let error: any Error
     
     /// A customized title.
-    public private(set) var title: String?
+    let title: TextContent?
     
     /// The eventual cancel action.
     ///
@@ -151,7 +151,7 @@ import SwiftUI
     
     private init(
         error: any Error,
-        title: String?,
+        title: TextContent?,
         cancelAction: CancelErrorAction?,
         retryAction: ErrorAction?,
         supplementaryActions: [ErrorAction],
@@ -544,11 +544,17 @@ extension FlowError {
             executionToken: self.executionToken) // share the execution token
     }
     
-    /// Sets the title of the flow error.
+    /// Sets the title of the flow error to a string without localization.
+    @_disfavoredOverload
     public func withTitle(_ title: String) -> FlowError {
+        withTitle(verbatim: title)
+    }
+    
+    /// Sets the title of the flow error to a string without localization.
+    public func withTitle(verbatim title: String) -> FlowError {
         FlowError(
             error: self.error,
-            title: title,
+            title: .verbatim(title),
             cancelAction: self.cancelAction,
             retryAction: self.retryAction,
             supplementaryActions: self.supplementaryActions,
@@ -556,6 +562,18 @@ extension FlowError {
             executionToken: self.executionToken) // share the execution token
     }
     
+    /// Sets the title of the flow error to a localized string.
+    public func withTitle(_ title: LocalizedStringResource) -> FlowError {
+        FlowError(
+            error: self.error,
+            title: .resource(title),
+            cancelAction: self.cancelAction,
+            retryAction: self.retryAction,
+            supplementaryActions: self.supplementaryActions,
+            finally: self.finally,
+            executionToken: self.executionToken) // share the execution token
+    }
+
     /// Replaces the error (useful when unwrapping underlying errors).
     public func withError(_ error: any Error) -> FlowError {
         FlowError(

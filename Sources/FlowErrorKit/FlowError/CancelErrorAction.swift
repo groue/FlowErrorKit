@@ -26,13 +26,9 @@ public struct CancelErrorAction {
 extension Text {
     /// Creates a text view that displays the title of the cancel action, if any.
     public init?(_ cancelAction: CancelErrorAction) {
-        switch cancelAction.title {
-        case .none:
+        guard let title = cancelAction.title else {
             return nil
-        case .verbatim(let title):
-            self.init(title)
-        case .resource(let title):
-            self.init(title)
         }
+        self.init(title)
     }
 }

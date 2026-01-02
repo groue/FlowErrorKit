@@ -106,11 +106,6 @@ public enum ErrorActionRole: Sendable {
 extension Text {
     /// Creates a text view that displays the title of the action.
     public init(_ errorAction: ErrorAction) {
-        switch errorAction.title {
-        case .verbatim(let title):
-            self.init(title)
-        case .resource(let title):
-            self.init(title)
-        }
+        self.init(errorAction.title)
     }
 }

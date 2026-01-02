@@ -16,16 +16,14 @@ public struct AlertFlowErrorPresenter {
         
         public func body(content: Content) -> some View {
             content.alert(
-                errorPresentation?.title ?? "",
+                errorPresentation.map { Text(titleFor: $0) } ?? Text(verbatim: ""),
                 isPresented: context.isErrorPresented,
                 presenting: errorPresentation,
                 actions: {
                     errorActions($0.flowError)
                 },
                 message: { errorPresentation in
-                    if let message = errorPresentation.message {
-                        Text(message)
-                    }
+                    Text(messageFor: errorPresentation)
                 })
         }
         
