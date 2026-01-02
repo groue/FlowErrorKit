@@ -1,0 +1,171 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@" : {
+
+    },
+    "`ErrorPresentationView` can lead the user to select an action multiple times. In this demo, you can hit the \"Open Settings\" button multiple times. Notice how a runtime warning %@ is triggered when you hit this button more than once. The warning suggests that we use the `allowMultipleActionExecutions` flag when creating the `FlowError`." : {
+
+    },
+    "Add a Retry button if desired, and execute custom code when the user cancels the error." : {
+
+    },
+    "Alert" : {
+
+    },
+    "Can you guess which error is thrown?" : {
+
+    },
+    "Clear log" : {
+
+    },
+    "Copied!" : {
+
+    },
+    "Copy Path" : {
+
+    },
+    "Could not pick an emoji" : {
+
+    },
+    "Custom Presentation" : {
+
+    },
+    "Discard error" : {
+
+    },
+    "Discard error in 3s" : {
+
+    },
+    "Error Actions" : {
+
+    },
+    "Error Basics" : {
+
+    },
+    "Error Presentation Basics" : {
+
+    },
+    "ErrorPresentationView" : {
+
+    },
+    "Failure probability: %@" : {
+
+    },
+    "FlowError Demo" : {
+
+    },
+    "flowError: %@" : {
+
+    },
+    "flowError: nil" : {
+
+    },
+    "flowError: none" : {
+
+    },
+    "Ignored Error" : {
+
+    },
+    "Ignored Errors" : {
+
+    },
+    "Multiple Actions" : {
+
+    },
+    "Multiple Actions Warning" : {
+
+    },
+    "No setup required: just catch and present errors with an alert of an ErrorPresentationView." : {
+
+    },
+    "Open Settings" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir les Réglages"
+          }
+        }
+      }
+    },
+    "Permission Required" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permission Requise"
+          }
+        }
+      }
+    },
+    "Pick an Emoji" : {
+
+    },
+    "Please grant access to your location in the Settings application." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veuillez autoriser l’accès à votre position dans l’application Réglages."
+          }
+        }
+      }
+    },
+    "Random Error" : {
+
+    },
+    "Random Errors" : {
+
+    },
+    "Sign in" : {
+
+    },
+    "Some errors need specific recovering actions. `CLError(.denied)`, handled by `CLErrorHandler` has an extra \"Open Settings\" action." : {
+
+    },
+    "Some errors represent user cancellation, and must not be presented. This is the case of `CocoaError(.userCancelled)`, handled by `CocoaErrorHandler`." : {
+
+    },
+    "Some errors require a custom presentation. `FrobnicateError`, handled by `FrobnicateErrorHandler`, have a custom title and message, and no Retry button when the error is unrecoverable." : {
+
+    },
+    "Supplementary Action" : {
+
+    },
+    "Supplementary Actions" : {
+
+    },
+    "The `UnauthorizedError` is handled by destroying the whole view when it happens." : {
+
+    },
+    "There should be as many ➡️ as ⬅️ after errors have been handled by the user. Unless an error is discarded, in which case no action is not executed and there is no ⬅️." : {
+
+    },
+    "This demo application reviews frequent use cases of error handling." : {
+
+    },
+    "Throw CountedError" : {
+
+    },
+    "Throw CountedError in 3s" : {
+
+    },
+    "Throw IgnoredError" : {
+
+    },
+    "Throw IgnoredError in 3s" : {
+
+    },
+    "Unauthorized Error" : {
+
+    },
+    "Unauthorized Errors" : {
+
+    },
+    "You have been disconnected." : {
+
+    }
+  },
+  "version" : "1.1"
+}
