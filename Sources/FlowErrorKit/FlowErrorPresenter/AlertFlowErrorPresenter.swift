@@ -28,14 +28,27 @@ public struct AlertFlowErrorPresenter {
         }
         
         @ViewBuilder private func errorActions(_ flowError: FlowError) -> some View {
-            Button(role: .cancel) {
-                // Run user code on the next runloop cycle, so that it can
-                // immediately present another error.
-                DispatchQueue.main.async {
-                    flowError.performCancelAction()
+            if #available(iOS 26.0, *) {
+                Button(role: .confirm) {
+                    // Run user code on the next runloop cycle, so that it can
+                    // immediately present another error.
+                    DispatchQueue.main.async {
+                        flowError.performCancelAction()
+                    }
+                } label: {
+                    cancelActionText(flowError) 
                 }
-            } label: {
-                cancelActionText(flowError) 
+                .keyboardShortcut(.defaultAction)
+            } else {
+                Button(role: .cancel) {
+                    // Run user code on the next runloop cycle, so that it can
+                    // immediately present another error.
+                    DispatchQueue.main.async {
+                        flowError.performCancelAction()
+                    }
+                } label: {
+                    cancelActionText(flowError)
+                }
             }
             
             ForEach(flowError.supplementaryActions) { action in
