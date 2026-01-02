@@ -1,4 +1,5 @@
 import FlowErrorKit
+import Foundation
 import Testing
 
 @MainActor @Suite
@@ -22,21 +23,26 @@ struct FlowErrorTests {
     }
     
     @Test
-    func cancelActionTitleProperty() {
+    func cancelAction() {
+        let en = Locale(identifier: "en")
+        let fr = Locale(identifier: "fr")
+        
         var flowError = FlowError(error: TestError())
-        #expect(flowError.cancelActionTitle == nil, "No cancel title by default")
+        #expect(flowError.cancelAction == nil)
         
         flowError = flowError.onCancel { _ in }
-        #expect(flowError.cancelActionTitle == nil, "An untitled cancel action does not change the cancel title")
+        #expect(flowError.cancelAction != nil)
+        #expect(flowError.cancelAction?.title(locale: en) == nil, "An untitled cancel action does not change the cancel title")
         
-        flowError = flowError.onCancel("Title 1") { _ in }
-        #expect(flowError.cancelActionTitle == "Title 1", "A titled cancel action changes the cancel title")
+        flowError = flowError.onCancel(verbatim: "Title 1") { _ in }
+        #expect(flowError.cancelAction?.title(locale: en) == "Title 1", "A titled cancel action changes the cancel title")
         
         flowError = flowError.onCancel { _ in }
-        #expect(flowError.cancelActionTitle == "Title 1", "An untitled cancel action does not change the cancel title")
+        #expect(flowError.cancelAction?.title(locale: en) == "Title 1", "An untitled cancel action does not change the cancel title")
         
-        flowError = flowError.onCancel("Title 2") { _ in }
-        #expect(flowError.cancelActionTitle == "Title 2", "A titled cancel action changes the cancel title")
+        flowError = flowError.onCancel(LocalizedStringResource("Give Up", bundle: .module)) { _ in }
+        #expect(flowError.cancelAction?.title(locale: en) == "Give Up", "A titled cancel action changes the cancel title")
+        #expect(flowError.cancelAction?.title(locale: fr) == "Laisser tomber", "A titled cancel action changes the cancel title")
     }
     
     @Test

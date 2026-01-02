@@ -245,19 +245,26 @@ private struct LegacyErrorPresentationView<Label: View, Description: View, Actio
         }
         
         func cancelButton() -> some View {
-            Button(cancelActionTitle, role: .cancel) {
+            Button(role: .cancel) {
                 flowError.performCancelAction()
+            } label: {
+                cancelActionText
             }
         }
         
-        var cancelActionTitle: String {
-            if let cancelActionTitle = flowError.cancelActionTitle {
-                return cancelActionTitle
-            } else if flowError.retryAction == nil && flowError.supplementaryActions.isEmpty {
+        var cancelActionText: Text {
+            let defaulText: Text
+            if flowError.retryAction == nil && flowError.supplementaryActions.isEmpty {
                 // Only possible action is cancel.
-                return String(localized: .ok, bundle: .module)
+                defaulText = Text(.ok)
             } else {
-                return String(localized: .cancel, bundle: .module)
+                defaulText = Text(.cancel)
+            }
+            
+            if let cancelAction = flowError.cancelAction {
+                return Text(cancelAction) ?? defaulText
+            } else {
+                return defaulText
             }
         }
     }

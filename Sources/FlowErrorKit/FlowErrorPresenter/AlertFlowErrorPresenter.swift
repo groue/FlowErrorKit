@@ -30,12 +30,14 @@ public struct AlertFlowErrorPresenter {
         }
         
         @ViewBuilder private func errorActions(_ flowError: FlowError) -> some View {
-            Button(cancelActionTitle(flowError), role: .cancel) {
+            Button(role: .cancel) {
                 // Run user code on the next runloop cycle, so that it can
                 // immediately present another error.
                 DispatchQueue.main.async {
                     flowError.performCancelAction()
                 }
+            } label: {
+                cancelActionText(flowError) 
             }
             
             ForEach(flowError.supplementaryActions) { action in
@@ -59,14 +61,19 @@ public struct AlertFlowErrorPresenter {
             }
         }
         
-        private func cancelActionTitle(_ flowError: FlowError) -> String {
-            if let cancelActionTitle = flowError.cancelActionTitle {
-                return cancelActionTitle
-            } else if flowError.retryAction == nil && flowError.supplementaryActions.isEmpty {
+        private func cancelActionText(_ flowError: FlowError) -> Text {
+            let defaulText: Text
+            if flowError.retryAction == nil && flowError.supplementaryActions.isEmpty {
                 // Only possible action is cancel.
-                return String(localized: .ok, bundle: .module)
+                defaulText = Text(.ok)
             } else {
-                return String(localized: .close, bundle: .module)
+                defaulText = Text(.close)
+            }
+            
+            if let cancelAction = flowError.cancelAction {
+                return Text(cancelAction) ?? defaulText
+            } else {
+                return defaulText
             }
         }
     }
@@ -140,7 +147,7 @@ public struct AlertFlowErrorPresenter {
             func updateErrorPresentation(
                 flowError newFlowError: FlowError?,
                 handleError: FlowErrorHandlerChain,
-                onCancelledPresentation: (_ cancelledFlowError: FlowError, _ cancelReason: ErrorCancelReason) -> Void)
+                onCancelledPresentation: (_ cancelledFlowError: FlowError, _ cancelReason: CancelErrorReason) -> Void)
             {
                 // Only update error presentation if error identity has changed
                 if newFlowError === self.presentedFlowError {

@@ -34,7 +34,10 @@ let package = Package(
         ),
         .testTarget(
             name: "FlowErrorKitTests",
-            dependencies: ["FlowErrorKit"]
+            dependencies: ["FlowErrorKit"],
+            resources: [
+                .process("Resources")
+            ]
         ),
     ]
 )

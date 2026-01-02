@@ -1,5 +1,6 @@
 import Foundation
 import IssueReporting
+import SwiftUI
 
 // `FlowError` is a class, not a struct, for multiple reasons:
 //
@@ -98,11 +99,6 @@ import IssueReporting
         }
     }
     
-    private struct CancelAction {
-        var title: String?
-        var perform: @MainActor (ErrorCancelReason) -> Void
-    }
-    
     /// The caught error.
     public let error: any Error
     
@@ -113,12 +109,7 @@ import IssueReporting
     ///
     /// To execute the cancel action, see ``performCancelAction()``
     /// and ``discard(_:)``.
-    private let cancelAction: CancelAction?
-    
-    /// The customized title for buttons that perform the cancel action.
-    public var cancelActionTitle: String? {
-        cancelAction?.title
-    }
+    public let cancelAction: CancelErrorAction?
     
     /// The eventual retry action, for recoverable errors.
     ///
@@ -161,7 +152,7 @@ import IssueReporting
     private init(
         error: any Error,
         title: String?,
-        cancelAction: CancelAction?,
+        cancelAction: CancelErrorAction?,
         retryAction: ErrorAction?,
         supplementaryActions: [ErrorAction],
         finally: (@MainActor () -> Void)?,
@@ -282,7 +273,7 @@ extension FlowError {
     ///
     /// - Returns: Whether the cancel action was executed.
     @discardableResult
-    public func discard(_ reason: ErrorCancelReason) -> Bool {
+    public func discard(_ reason: CancelErrorReason) -> Bool {
         executionToken.executeUnlessExecuted {
             cancelAction?.perform(reason)
             finally?()
@@ -307,16 +298,16 @@ extension FlowError {
     /// - parameter title: The title of the "Cancel" button.
     /// - parameter perform: A closure called when the user dismisses the
     ///   error alert with the "Cancel" button, and, generally, for whatever
-    ///   reason given as an argument (see ``ErrorCancelReason``).
-    public func onCancel(
-        _ title: String? = nil,
-        _ perform: @escaping @MainActor (_ cancelReason: ErrorCancelReason) -> Void
+    ///   reason given as an argument (see ``CancelErrorReason``).
+    func onCancel(
+        _ title: TextContent?,
+        _ perform: @escaping @MainActor (_ cancelReason: CancelErrorReason) -> Void
     ) -> FlowError {
         let oldCancelAction = self.cancelAction
         return FlowError(
             error: self.error,
             title: self.title,
-            cancelAction: CancelAction(
+            cancelAction: CancelErrorAction(
                 title: title ?? oldCancelAction?.title,
                 perform: { cancelReason in
                     oldCancelAction?.perform(cancelReason)
@@ -326,6 +317,49 @@ extension FlowError {
             supplementaryActions: self.supplementaryActions,
             finally: self.finally,
             executionToken: self.executionToken)
+    }
+    
+    /// Returns a flow error that executes the provided closure when the
+    /// error is cancelled, with a title without localization.
+    ///
+    /// - parameter title: The title of the "Cancel" button.
+    /// - parameter perform: A closure called when the user dismisses the
+    ///   error alert with the "Cancel" button, and, generally, for whatever
+    ///   reason given as an argument (see ``CancelErrorReason``).
+    @_disfavoredOverload
+    public func onCancel(
+        _ title: String,
+        _ perform: @escaping @MainActor (_ cancelReason: CancelErrorReason) -> Void
+    ) -> FlowError {
+        onCancel(.verbatim(title), perform)
+    }
+    
+    /// Returns a flow error that executes the provided closure when the
+    /// error is cancelled, with a title without localization.
+    ///
+    /// - parameter title: The title of the "Cancel" button.
+    /// - parameter perform: A closure called when the user dismisses the
+    ///   error alert with the "Cancel" button, and, generally, for whatever
+    ///   reason given as an argument (see ``CancelErrorReason``).
+    public func onCancel(
+        verbatim title: String,
+        _ perform: @escaping @MainActor (_ cancelReason: CancelErrorReason) -> Void
+    ) -> FlowError {
+        onCancel(.verbatim(title), perform)
+    }
+    
+    /// Returns a flow error that executes the provided closure when the
+    /// error is cancelled, with a localized title.
+    ///
+    /// - parameter title: The title of the "Cancel" button.
+    /// - parameter perform: A closure called when the user dismisses the
+    ///   error alert with the "Cancel" button, and, generally, for whatever
+    ///   reason given as an argument (see ``CancelErrorReason``).
+    public func onCancel(
+        _ title: LocalizedStringResource? = nil,
+        _ perform: @escaping @MainActor (_ cancelReason: CancelErrorReason) -> Void
+    ) -> FlowError {
+        onCancel(title.map { .resource($0) }, perform)
     }
     
     // This overload is necessary because a default argument for title is
@@ -390,7 +424,7 @@ extension FlowError {
     /// "Open Settings" action.
     ///
     /// If the user selects this action, the cancel action is run with reason
-    /// ``ErrorCancelReason/supplementaryActionPerformed``.
+    /// ``CancelErrorReason/supplementaryActionPerformed``.
     public func appendingAction(
         _ title: String,
         role: ErrorActionRole? = nil,
@@ -408,7 +442,7 @@ extension FlowError {
     /// "Open Settings" action.
     ///
     /// If the user selects this action, the cancel action is run with reason
-    /// ``ErrorCancelReason/supplementaryActionPerformed``.
+    /// ``CancelErrorReason/supplementaryActionPerformed``.
     public func appendingAction(_ action: ErrorAction) -> FlowError {
         return FlowError(
             error: self.error,
@@ -465,10 +499,10 @@ extension FlowError {
     }
 }
 
-// MARK: - ErrorCancelReason
+// MARK: - CancelErrorReason
 
 /// The reason why the ``FlowError`` `onCancel` handler is invoked.
-public enum ErrorCancelReason {
+public enum CancelErrorReason {
     /// The user has selected the Cancel button.
     case userCancelled
     

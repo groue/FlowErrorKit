@@ -104,7 +104,7 @@ There are two exceptions:
 ### Flow error information
 
 - ``error``
-- ``cancelActionTitle``
+- ``cancelAction``
 - ``retryAction``
 - ``title``
 - ``supplementaryActions``
@@ -118,7 +118,9 @@ There are two exceptions:
 
 ### Transforming flow errors
 
-- ``onCancel(_:_:)``
+- ``onCancel(_:_:)-(LocalizedStringResource?,_)``
+- ``onCancel(_:_:)-(String,_)``
+- ``onCancel(verbatim:_:)-(String,_)``
 - ``onRetry(_:)``
 - ``onRetry(_:_:)``
 - ``appendingAction(_:)``
@@ -131,4 +133,5 @@ There are two exceptions:
 ### Supporting Types
 
 - ``ErrorAction``
-- ``ErrorCancelReason``
+- ``CancelErrorAction``
+- ``CancelErrorReason``
