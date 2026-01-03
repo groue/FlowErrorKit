@@ -5,11 +5,16 @@ struct MainView: SignedInView {
     @State var camera = MapCameraPosition.automatic
     
     func body(session: Session) -> some View {
-        VStack {
-            Map(position: $camera) {
-                UserAnnotation()
+        Map(position: $camera) {
+            UserAnnotation()
+        }
+        .toolbar {
+            ToolbarItem(placement: .bottomBar) {
+                Spacer()
             }
-            MapUserLocationButton(position: $camera)
+            ToolbarItem(placement: .bottomBar) {
+                MapUserLocationButton(position: $camera)
+            }
         }
     }
 }

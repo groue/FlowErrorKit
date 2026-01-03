@@ -28,6 +28,7 @@ struct MapUserLocationButton: View {
                 ProgressView()
             } else {
                 Image(systemName: state == .idle ? "location" : "location.fill")
+                    .foregroundStyle(.tint)
             }
         }
         .allowsHitTesting(state != .locating)
@@ -143,7 +144,8 @@ extension MapUserLocationButtonViewModel: CLLocationManagerDelegate {
 extension MapUserLocationButtonViewModel: FlowErrorHandler {
     func handle(_ flowError: FlowError) -> FlowErrorHandling {
         if flowError.error is CancellationError {
-            // User has denied authorization when requested.
+            // User has denied authorization when requested:
+            // don't present any error.
             return .cancel
             
         } else if let error = flowError.error as? CLError {
@@ -163,10 +165,6 @@ extension MapUserLocationButtonViewModel: FlowErrorHandler {
                     title: "Permission Required",
                     message: "Please grant access to your location in the Settings application.",
                     flowError: presentedFlowError))
-                
-            case CLError.geocodeCanceled:
-                // Don't present this error
-                return .cancel
                 
             default:
                 return .present(ErrorPresentation(
