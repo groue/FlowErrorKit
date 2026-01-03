@@ -27,31 +27,29 @@ struct AuthorizationView: View {
     }
     
     var signedOutContent: some View {
-        List {
-            Section {
-                signInButton
-            }
+        VStack {
+            signInButton
             
             ErrorPicker(selection: $viewModel.demoError, availableErrors: [
                 .URLError_notConnectedToInternet,
                 .APIError_unauthorized,
-            ]) {
-                Label("Sign In Error", systemImage: "hand.raised")
-            }
-            .pickerStyle(.inline)
+            ])
         }
+        .padding(.horizontal)
     }
     
     var signInButton: some View {
         Button {
             Task { await signIn() }
         } label: {
-            if viewModel.isSigningIn {
+            ZStack {
                 ProgressView()
-            } else {
+                    .opacity(viewModel.isSigningIn ? 1 : 0)
                 Text("Sign In")
+                    .opacity(viewModel.isSigningIn ? 0 : 1)
             }
         }
+        .buttonStyle(.borderedProminent)
         .disabled(viewModel.isSigningIn)
     }
     

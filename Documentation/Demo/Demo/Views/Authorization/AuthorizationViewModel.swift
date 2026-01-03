@@ -8,12 +8,17 @@ import Observation
     
     var demoError: Error?
     
+    /// When this method returns without error, there is a user session.
     func signIn() async throws {
-        assert(!isSigningIn)
+        if session != nil {
+            return
+        }
+        
+        assert(!isSigningIn, "Already signing in")
         isSigningIn = true
         defer { isSigningIn = false }
         
-        try await Task.sleep(for: .seconds(1))
+        try await Task.sleep(for: .seconds(0.5))
         
         if let demoError {
             throw demoError
@@ -25,17 +30,23 @@ import Observation
 
 extension AuthorizationViewModel: FlowErrorHandler {
     func handle(_ flowError: FlowErrorKit.FlowError) -> FlowErrorKit.FlowErrorHandling {
-        // Specific handling of APIError.unauthorized: drop session.
-        if session != nil,
-           case APIError.unauthorized = flowError.error
-        {
+        guard case APIError.unauthorized = flowError.error else {
+            return .pass(flowError)
+        }
+        
+        if session != nil {
+            // Side effect: current session is dropped.
             session = nil
+            
             return .present(ErrorPresentation(
                 title: "Your session has expired",
                 message: "Please sign in again.",
                 flowError: flowError))
         } else {
-            return .pass(flowError)
+            return .present(ErrorPresentation(
+                title: "Sign-in failed",
+                message: "Please check your credentials.",
+                flowError: flowError))
         }
     }
 }

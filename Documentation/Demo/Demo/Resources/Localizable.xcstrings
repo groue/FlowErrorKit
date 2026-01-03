@@ -57,6 +57,16 @@
         }
       }
     },
+    "Please check your credentials." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veuillez vérifier vos identifiants."
+          }
+        }
+      }
+    },
     "Please grant access to your location in the Settings application." : {
       "localizations" : {
         "fr" : {
@@ -87,12 +97,12 @@
         }
       }
     },
-    "Sign In Error" : {
+    "Sign-in failed" : {
       "localizations" : {
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Erreur de connexion"
+            "value" : "La connexion a échoué"
           }
         }
       }
