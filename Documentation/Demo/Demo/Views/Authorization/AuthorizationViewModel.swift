@@ -26,6 +26,10 @@ import Observation
         
         session = Session()
     }
+    
+    func signOut() {
+        session = nil
+    }
 }
 
 extension AuthorizationViewModel: FlowErrorHandler {

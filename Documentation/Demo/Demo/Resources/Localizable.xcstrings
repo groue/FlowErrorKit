@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Account" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compte"
+          }
+        }
+      }
+    },
     "Airplane Mode" : {
       "localizations" : {
         "fr" : {
@@ -73,6 +83,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Connexion"
+          }
+        }
+      }
+    },
+    "Sign Out" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se déconnecter"
           }
         }
       }

@@ -6,10 +6,13 @@ struct AuthorizationView: View {
     @State var flowError: FlowError?
     
     var body: some View {
-        content
-            .presentError($flowError, with: .alert)
+        ZStack {
+            Color.demoYellow.ignoresSafeArea()
+            content
+        }
+        .presentError($flowError, with: .alert)
         // Let the view model handle 401 Unauthorized
-            .handleError(with: viewModel)
+        .handleError(with: viewModel)
     }
     
     @ViewBuilder
@@ -24,18 +27,24 @@ struct AuthorizationView: View {
     func signedInContent(_ session: Session) -> some View {
         MainView()
             .environment(\.session, session)
+            .environment(\.signOut, SignOutAction {
+                viewModel.signOut()
+            })
     }
     
     var signedOutContent: some View {
-        VStack {
-            Image(systemName: "person.crop.circle")
-                .imageScale(.large)
-                .font(.largeTitle.weight(.medium))
-                .foregroundStyle(.secondary)
-            Text("Please sign in")
-                .fontWeight(.semibold)
-                .font(.title2)
-
+        VStack(spacing: 40) {
+            VStack {
+                Image(systemName: "person.crop.circle")
+                    .imageScale(.large)
+                    .font(.largeTitle.weight(.medium))
+                    .foregroundStyle(.secondary)
+                Text("Please sign in")
+                    .fontWeight(.semibold)
+                    .font(.title2)
+            }
+            .foregroundStyle(.demoDeepBlue)
+            
             HStack {
                 signInButton
                     .buttonBorderShape(.capsule)
