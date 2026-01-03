@@ -7,6 +7,7 @@ struct DemoApp: App {
         WindowGroup {
             AuthorizationView()
         }
+        
         // Register error handlers
         .handleError(with: APIErrorHandler())
     }

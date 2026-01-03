@@ -11,9 +11,6 @@
         }
       }
     },
-    "Hello, world!" : {
-
-    },
     "HTTP 401 (Unauthorized)" : {
       "shouldTranslate" : false
     },
@@ -36,6 +33,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pas de connexion Internet"
+          }
+        }
+      }
+    },
+    "Open Settings" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir les Réglages"
+          }
+        }
+      }
+    },
+    "Permission Required" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permission requise"
+          }
+        }
+      }
+    },
+    "Please grant access to your location in the Settings application." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veuillez autoriser l’accès à votre position dans l’application Réglages."
           }
         }
       }

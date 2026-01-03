@@ -1,14 +1,16 @@
 import SwiftUI
+import MapKit
 
 struct MainView: SignedInView {
+    @State var camera = MapCameraPosition.automatic
+    
     func body(session: Session) -> some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+            Map(position: $camera) {
+                UserAnnotation()
+            }
+            MapUserLocationButton(position: $camera)
         }
-        .padding()
     }
 }
 
