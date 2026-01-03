@@ -8,30 +8,27 @@ struct ErrorPicker<Label: View>: View {
         case APIError_forbidden
     }
     
-    var availableErrors: [ErrorItem] = [
-        .URLError_notConnectedToInternet,
-        .APIError_unauthorized,
-        .APIError_forbidden,
-    ]
-    
-    @Binding var selection: Error?
-    var label: Label
-    
+    @Binding private var selection: Error?
     @State private var errorItem: ErrorItem?
+    private var availableErrors: [ErrorItem]
+    private var label: Label
     
     init(
         selection: Binding<Error?>,
+        availableErrors: [ErrorItem],
         @ViewBuilder label: () -> Label = { Text("Error") }
     ) {
         self._selection = selection
+        self.availableErrors = availableErrors
         self.label = label()
     }
     
     init(
         _ titleKey: LocalizedStringKey,
+        availableErrors: [ErrorItem],
         selection: Binding<Error?>
     ) where Label == Text {
-        self.init(selection: selection) {
+        self.init(selection: selection, availableErrors: availableErrors) {
             Text(titleKey)
         }
     }
@@ -89,6 +86,10 @@ extension ErrorPicker.ErrorItem {
     @Previewable @State var error: Error?
     
     List {
-        ErrorPicker(selection: $error)
+        ErrorPicker(selection: $error, availableErrors: [
+            .URLError_notConnectedToInternet,
+            .APIError_unauthorized,
+            .APIError_forbidden,
+        ])
     }
 }

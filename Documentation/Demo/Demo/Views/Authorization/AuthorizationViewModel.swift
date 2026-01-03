@@ -6,7 +6,7 @@ import Observation
     private(set) var session: Session?
     private(set) var isSigningIn = false
     
-    var signInError: Error?
+    var demoError: Error?
     
     func signIn() async throws {
         assert(!isSigningIn)
@@ -15,8 +15,8 @@ import Observation
         
         try await Task.sleep(for: .seconds(1))
         
-        if let signInError {
-            throw signInError
+        if let demoError {
+            throw demoError
         }
         
         session = Session()

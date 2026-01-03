@@ -32,7 +32,10 @@ struct AuthorizationView: View {
                 signInButton
             }
             
-            ErrorPicker(selection: $viewModel.signInError) {
+            ErrorPicker(selection: $viewModel.demoError, availableErrors: [
+                .URLError_notConnectedToInternet,
+                .APIError_unauthorized,
+            ]) {
                 Label("Sign In Error", systemImage: "hand.raised")
             }
             .pickerStyle(.inline)
