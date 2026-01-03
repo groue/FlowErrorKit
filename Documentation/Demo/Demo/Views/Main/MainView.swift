@@ -1,21 +1,19 @@
 import SwiftUI
 
 struct MainView: SignedInView {
-    @Environment(\.signOut) private var signOut
-    
     func body(session: Session) -> some View {
         NavigationStack {
             ZStack {
                 Color.demoYellow.ignoresSafeArea()
                 content
             }
-                .toolbar {
-                    ToolbarItem {
-                        Menu("Account", systemImage: "person.fill") {
-                            Button("Sign Out") { signOut() }
-                        }
+            .toolbar {
+                ToolbarItem {
+                    Menu("Account", systemImage: "person.fill") {
+                        SignOutButton()
                     }
                 }
+            }
         }
     }
     

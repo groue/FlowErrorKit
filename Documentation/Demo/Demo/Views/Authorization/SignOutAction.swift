@@ -12,3 +12,11 @@ struct SignOutAction {
 extension EnvironmentValues {
     @Entry var signOut: SignOutAction = SignOutAction { }
 }
+
+struct SignOutButton: View {
+    @Environment(\.signOut) var signOut
+    
+    var body: some View {
+        Button("Sign Out") { signOut() }
+    }
+}
