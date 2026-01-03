@@ -12,7 +12,7 @@ struct AuthorizationView: View {
         }
         .presentError($flowError, with: .alert)
         // 401 Unauthorized is handled by the view model 
-        .expiredSessionAlert(isPresented: $viewModel.expiredSessionAlertisVisible)
+        .expiredSessionAlert(isPresented: $viewModel.presentsExpiredSessionAlert)
         .handleError(with: viewModel)
     }
     
