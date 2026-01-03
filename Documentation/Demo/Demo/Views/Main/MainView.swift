@@ -50,12 +50,16 @@ private struct ContentView: View {
         .padding(.horizontal)
         .toolbar {
             ToolbarItem {
-                Menu("Account", systemImage: "person.fill") {
-                    SignOutButton()
-                }
+                accountMenu
             }
         }
         .presentError($flowError, with: .alert)
+    }
+    
+    var accountMenu: some View {
+        Menu("Account", systemImage: "person.fill") {
+            SignOutButton()
+        }
     }
     
     var loadEmojiButton: some View {
