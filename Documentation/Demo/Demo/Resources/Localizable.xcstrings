@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Airplane Mode" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mode avion"
+          }
+        }
+      }
+    },
     "Error" : {
       "localizations" : {
         "fr" : {
@@ -23,16 +33,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pas d’erreur"
-          }
-        }
-      }
-    },
-    "Not Connected to Internet" : {
-      "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pas de connexion Internet"
           }
         }
       }
@@ -73,6 +73,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Veuillez autoriser l’accès à votre position dans l’application Réglages."
+          }
+        }
+      }
+    },
+    "Please sign in" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veuillez vous connecter"
           }
         }
       }

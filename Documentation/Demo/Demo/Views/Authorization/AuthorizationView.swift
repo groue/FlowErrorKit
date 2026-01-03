@@ -28,12 +28,31 @@ struct AuthorizationView: View {
     
     var signedOutContent: some View {
         VStack {
-            signInButton
-            
-            ErrorPicker(selection: $viewModel.demoError, availableErrors: [
-                .URLError_notConnectedToInternet,
-                .APIError_unauthorized,
-            ])
+            Image(systemName: "person.crop.circle")
+                .imageScale(.large)
+                .font(.largeTitle.weight(.medium))
+                .foregroundStyle(.secondary)
+            Text("Please sign in")
+                .fontWeight(.semibold)
+                .font(.title2)
+
+            HStack {
+                signInButton
+                    .buttonBorderShape(.capsule)
+                    .buttonStyle(.borderedProminent)
+                
+                ErrorPicker(selection: $viewModel.demoError, availableErrors: [
+                    .URLError_notConnectedToInternet,
+                    .APIError_unauthorized,
+                ])
+                .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .padding(4)
+            .background {
+                Capsule()
+                    .fill(.tint.opacity(0.05))
+                    .stroke(.tint.opacity(0.5), lineWidth: 1)
+            }
         }
         .padding(.horizontal)
     }
@@ -49,7 +68,6 @@ struct AuthorizationView: View {
                     .opacity(viewModel.isSigningIn ? 0 : 1)
             }
         }
-        .buttonStyle(.borderedProminent)
         .disabled(viewModel.isSigningIn)
     }
     

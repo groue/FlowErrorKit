@@ -58,7 +58,7 @@ extension ErrorPicker.ErrorItem {
     var localizedDescription: LocalizedStringKey {
         switch self {
         case .URLError_notConnectedToInternet:
-            return "Not Connected to Internet"
+            return "Airplane Mode"
         case .APIError_unauthorized:
             return "HTTP 401 (Unauthorized)"
         case .APIError_forbidden:
