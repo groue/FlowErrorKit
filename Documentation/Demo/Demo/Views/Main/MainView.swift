@@ -8,13 +8,6 @@ struct MainView: SignedInView {
                 Color.demoYellow.ignoresSafeArea()
                 ContentView(session: session)
             }
-            .toolbar {
-                ToolbarItem {
-                    Menu("Account", systemImage: "person.fill") {
-                        SignOutButton()
-                    }
-                }
-            }
         }
     }
 }
@@ -53,9 +46,16 @@ private struct ContentView: View {
                     .fill(.tint.opacity(0.05))
                     .stroke(.tint.opacity(0.5), lineWidth: 1)
             }
-            .presentError($flowError, with: .alert)
         }
         .padding(.horizontal)
+        .toolbar {
+            ToolbarItem {
+                Menu("Account", systemImage: "person.fill") {
+                    SignOutButton()
+                }
+            }
+        }
+        .presentError($flowError, with: .alert)
     }
     
     var loadEmojiButton: some View {
