@@ -1,0 +1,115 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Error" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erreur"
+          }
+        }
+      }
+    },
+    "Hello, world!" : {
+
+    },
+    "HTTP 401 (Unauthorized)" : {
+      "shouldTranslate" : false
+    },
+    "HTTP 403 (Forbidden)" : {
+      "shouldTranslate" : false
+    },
+    "No Error" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas d’erreur"
+          }
+        }
+      }
+    },
+    "Not Connected to Internet" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas de connexion Internet"
+          }
+        }
+      }
+    },
+    "Please sign in again." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veuillez vous connecter à nouveau."
+          }
+        }
+      }
+    },
+    "Sign In" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connexion"
+          }
+        }
+      }
+    },
+    "Sign In Error" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erreur de connexion"
+          }
+        }
+      }
+    },
+    "The Internet connection appears to be offline." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La connexion Internet semble interrompue."
+          }
+        }
+      }
+    },
+    "You don’t have the required permissions." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous n’avez pas les permissions requises."
+          }
+        }
+      }
+    },
+    "You’re not authorized to perform this action" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous n’êtes pas autorisé à effectuer cette action"
+          }
+        }
+      }
+    },
+    "Your session has expired" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre session a expiré"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.1"
+}
