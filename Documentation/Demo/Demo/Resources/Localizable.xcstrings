@@ -21,6 +21,16 @@
         }
       }
     },
+    "Download" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Charger"
+          }
+        }
+      }
+    },
     "Error" : {
       "localizations" : {
         "fr" : {
@@ -43,6 +53,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pas d’erreur"
+          }
+        }
+      }
+    },
+    "OK" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
           }
         }
       }

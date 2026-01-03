@@ -37,9 +37,13 @@ struct EmojiView: View {
                 EmojiView(emoji: emoji)
                 
                 Button("Pick an Emoji") {
-                    emoji = try! randomEmoji(
-                        throwing: URLError.networkConnectionLostError,
-                        failureProbability: 0)
+                    emoji = [
+                        "🙂", "😁", "😅", "😜", "🤓",
+                        "😡", "😨", "😵", "😬", "🤯",
+                        "🎃", "👻", "😈", "👍", "👎",
+                        "🤞", "🌼", "🐛", "🍀", "💣",
+                        "💥", "🌈", "❤️", "⚠️", "🎶",
+                    ].randomElement()!
                 }
                 .buttonStyle(.bordered)
             }

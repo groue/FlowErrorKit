@@ -11,7 +11,8 @@ struct AuthorizationView: View {
             content
         }
         .presentError($flowError, with: .alert)
-        // Let the view model handle 401 Unauthorized
+        // 401 Unauthorized is handled by the view model 
+        .expiredSessionAlert(isPresented: $viewModel.expiredSessionAlertisVisible)
         .handleError(with: viewModel)
     }
     
@@ -85,6 +86,24 @@ struct AuthorizationView: View {
             try await viewModel.signIn()
         } catch {
             flowError = FlowError(error: error)
+        }
+    }
+}
+
+extension View {
+    fileprivate func expiredSessionAlert(isPresented: Binding<Bool>) -> some View {
+        alert(
+            "Your session has expired",
+            isPresented: isPresented
+        ) {
+            if #available(iOS 26.0, *) {
+                Button(role: .confirm) { }
+                    .keyboardShortcut(.defaultAction)
+            } else {
+                Button("OK", role: .cancel) { }
+            }
+        } message: {
+            Text("Please sign in again.")
         }
     }
 }

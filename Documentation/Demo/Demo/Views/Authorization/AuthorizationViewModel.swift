@@ -5,6 +5,7 @@ import Observation
 @Observable final class AuthorizationViewModel {
     private(set) var session: Session?
     private(set) var isSigningIn = false
+    var expiredSessionAlertisVisible = false
     
     var demoError: Error?
     
@@ -39,13 +40,14 @@ extension AuthorizationViewModel: FlowErrorHandler {
         }
         
         if session != nil {
-            // Side effect: current session is dropped.
+            // User is no longer signed in.
             session = nil
             
-            return .present(ErrorPresentation(
-                title: "Your session has expired",
-                message: "Please sign in again.",
-                flowError: flowError))
+            // Don't attempt at presenting the error, because the view that
+            // caught the error is about to stop being rendered. Instead,
+            // present the dedicated expired session alert.
+            expiredSessionAlertisVisible = true
+            return .cancel
         } else {
             return .present(ErrorPresentation(
                 title: "Sign-in failed",
