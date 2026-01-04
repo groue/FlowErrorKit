@@ -32,29 +32,33 @@ struct FlowErrorTests {
         
         flowError = flowError.onCancel { _ in }
         #expect(flowError.cancelAction != nil)
-        #expect(flowError.cancelAction?.title(locale: en) == nil, "An untitled cancel action does not change the cancel title")
+        #expect(flowError.cancelAction?.title == nil, "An untitled cancel action does not change the cancel title")
         
         flowError = flowError.onCancel(verbatim: "Title 1") { _ in }
-        #expect(flowError.cancelAction?.title(locale: en) == "Title 1", "A titled cancel action changes the cancel title")
+        #expect(flowError.cancelAction?.title?.formatted(.text.locale(en)) == "Title 1", "A titled cancel action changes the cancel title")
         
         flowError = flowError.onCancel { _ in }
-        #expect(flowError.cancelAction?.title(locale: en) == "Title 1", "An untitled cancel action does not change the cancel title")
+        #expect(flowError.cancelAction?.title?.formatted(.text.locale(en)) == "Title 1", "An untitled cancel action does not change the cancel title")
         
         flowError = flowError.onCancel(LocalizedStringResource("Give Up", bundle: .module)) { _ in }
-        #expect(flowError.cancelAction?.title(locale: en) == "Give Up", "A titled cancel action changes the cancel title")
-        #expect(flowError.cancelAction?.title(locale: fr) == "Laisser tomber", "A titled cancel action changes the cancel title")
+        #expect(flowError.cancelAction?.title?.formatted(.text.locale(en)) == "Give Up", "A titled cancel action changes the cancel title")
+        #expect(flowError.cancelAction?.title?.formatted(.text.locale(fr)) == "Laisser tomber", "A titled cancel action changes the cancel title")
     }
     
     @Test
-    func titleProperty() {
+    func failedActionName_property() {
+        let en = Locale(identifier: "en")
+        let fr = Locale(identifier: "fr")
+        
         var flowError = FlowError(error: TestError())
-        #expect(flowError.title == nil)
+        #expect(flowError.failedActionName == nil)
         
-        flowError = flowError.withTitle("Title 1")
-        #expect(flowError.title == "Title 1")
+        flowError = flowError.withFailedActionName("Title 1")
+        #expect(flowError.failedActionName?.formatted(.text.locale(en)) == "Title 1")
         
-        flowError = flowError.withTitle("Title 2")
-        #expect(flowError.title == "Title 2")
+        flowError = flowError.withFailedActionName(LocalizedStringResource("Give Up", bundle: .module))
+        #expect(flowError.failedActionName?.formatted(.text.locale(en)) == "Give Up")
+        #expect(flowError.failedActionName?.formatted(.text.locale(fr)) == "Laisser tomber")
     }
     
     @Test
@@ -67,18 +71,18 @@ struct FlowErrorTests {
         
         flowError = flowError.onRetry { }
         #expect(flowError.retryAction != nil)
-        #expect(flowError.retryAction?.title(locale: en) == "Retry", "The default title is Retry")
-        #expect(flowError.retryAction?.title(locale: fr) == "Réessayer", "The default title is Retry")
+        #expect(flowError.retryAction?.title.formatted(.text.locale(en)) == "Retry", "The default title is Retry")
+        #expect(flowError.retryAction?.title.formatted(.text.locale(fr)) == "Réessayer", "The default title is Retry")
 
         flowError = flowError.onRetry(verbatim: "Title 1") { }
-        #expect(flowError.retryAction?.title(locale: en) == "Title 1", "A titled retry action changes the retry title")
+        #expect(flowError.retryAction?.title.formatted(.text.locale(en)) == "Title 1", "A titled retry action changes the retry title")
         
         flowError = flowError.onRetry { }
-        #expect(flowError.retryAction?.title(locale: en) == "Title 1", "An untitled retry action does not change the retry title")
+        #expect(flowError.retryAction?.title.formatted(.text.locale(en)) == "Title 1", "An untitled retry action does not change the retry title")
         
         flowError = flowError.onRetry(LocalizedStringResource("Give Up", bundle: .module)) { }
-        #expect(flowError.retryAction?.title(locale: en) == "Give Up", "A titled retry action changes the retry title")
-        #expect(flowError.retryAction?.title(locale: fr) == "Laisser tomber", "A titled retry action changes the retry title")
+        #expect(flowError.retryAction?.title.formatted(.text.locale(en)) == "Give Up", "A titled retry action changes the retry title")
+        #expect(flowError.retryAction?.title.formatted(.text.locale(fr)) == "Laisser tomber", "A titled retry action changes the retry title")
     }
     
     @Test
@@ -92,18 +96,18 @@ struct FlowErrorTests {
         flowError = flowError.appendingAction(ErrorAction(verbatim: "Title 1", perform: { }))
         #expect(flowError.supplementaryActions.count == 1)
         #expect(flowError.supplementaryActions.last?.role == nil)
-        #expect(flowError.supplementaryActions.last?.title(locale: en) == "Title 1")
+        #expect(flowError.supplementaryActions.last?.title.formatted(.text.locale(en)) == "Title 1")
         
         flowError = flowError.appendingAction(verbatim: "Title 2", perform: { })
         #expect(flowError.supplementaryActions.count == 2)
         #expect(flowError.supplementaryActions.last?.role == nil)
-        #expect(flowError.supplementaryActions.last?.title(locale: en) == "Title 2")
+        #expect(flowError.supplementaryActions.last?.title.formatted(.text.locale(en)) == "Title 2")
         
         flowError = flowError.appendingAction(LocalizedStringResource("Give Up", bundle: .module), role: .destructive, perform: { })
         #expect(flowError.supplementaryActions.count == 3)
         #expect(flowError.supplementaryActions.last?.role == .destructive)
-        #expect(flowError.supplementaryActions.last?.title(locale: en) == "Give Up")
-        #expect(flowError.supplementaryActions.last?.title(locale: fr) == "Laisser tomber")
+        #expect(flowError.supplementaryActions.last?.title.formatted(.text.locale(en)) == "Give Up")
+        #expect(flowError.supplementaryActions.last?.title.formatted(.text.locale(fr)) == "Laisser tomber")
     }
     
     @Test
@@ -117,7 +121,7 @@ struct FlowErrorTests {
             .appendingAction("Title") { }
             .finally { }
             .withError(CancellationError())
-            .withTitle("Title")
+            .withFailedActionName("Title")
         let flowError3 = FlowError(error: TestError())
         
         #expect(flowError1.isSameError(as: flowError1))

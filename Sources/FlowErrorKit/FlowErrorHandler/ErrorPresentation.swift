@@ -7,10 +7,10 @@ import SwiftUI
     public static let defaultSystemImage = "exclamationmark.circle"
     
     /// The error title.
-    fileprivate var title: TextContent?
+    public var title: TextContent?
     
     /// The error message.
-    fileprivate var message: TextContent?
+    public var message: TextContent?
     
     // A system symbol image.
     public var systemImage: String
@@ -18,13 +18,43 @@ import SwiftUI
     /// The presented flow error.
     public var flowError: FlowError
     
-    fileprivate var alertTitle: TextContent {
-        if let errorTitle = flowError.title {
-            return errorTitle
+    public var alertTitle: TextContent {
+        if let failedActionName = flowError.failedActionName {
+            return failedActionName
         } else if let title {
             return title
         } else {
             return .resource(.anErrorOccurred)
+        }
+    }
+    
+    public var alertMessage: Message? {
+        if flowError.failedActionName != nil,
+           let title = title
+        {
+            if let message = message {
+                return Message(text1: title, text2: message)
+            } else {
+#if DEBUG
+                return Message(text1: title, text2: .verbatim("DEBUG: \(flowError.error)"))
+#else
+                return Message(text1: title)
+#endif
+            }
+        } else {
+#if DEBUG
+            if let message = message {
+                return Message(text1: message)
+            } else {
+                return Message(text1: .verbatim("DEBUG: \(flowError.error)"))
+            }
+#else
+            if let messageContent = messageContent {
+                return Message(text1: messageContent)
+            } else {
+                return nil
+            }
+#endif
         }
     }
     
@@ -96,56 +126,45 @@ import SwiftUI
     }
 }
 
-public struct ErrorPresentationLabel: View {
-    var errorPresentation: ErrorPresentation
-    
-    public init(_ errorPresentation: ErrorPresentation) {
-        self.errorPresentation = errorPresentation
+extension ErrorPresentation {
+    public struct Message: Equatable {
+        var text1: TextContent
+        var text2: TextContent?
     }
-    
-    public var body: some View {
-        Label {
-            Text(errorPresentation.alertTitle)
-        } icon: {
-            Image(systemName: errorPresentation.systemImage)
+}
+
+extension ErrorPresentation.Message {
+    public struct FormatStyle: Foundation.FormatStyle {
+        var locale = Locale.current
+        
+        public init() { }
+        
+        public func format(_ value: ErrorPresentation.Message) -> String {
+            let formatted1 = value.text1.formatted(.text.locale(locale))
+            let formatted2 = value.text2?.formatted(.text.locale(locale))
+            if let formatted2 {
+                return "\(formatted1)\n\(formatted2)"
+            } else {
+                return formatted1
+            }
+        }
+
+        public func locale(_ locale: Locale) -> Self {
+            var result = self
+            result.locale = locale
+            return result
         }
     }
 }
 
-extension Text {
-    @MainActor init(
-        titleFor errorPresentation: ErrorPresentation
-    ) {
-        self.init(errorPresentation.alertTitle)
-    }
+extension FormatStyle where Self == ErrorPresentation.Message.FormatStyle {
+    public static var text: ErrorPresentation.Message.FormatStyle { .init() }
 }
 
-extension Text {
-    @MainActor init?(
-        messageFor errorPresentation: ErrorPresentation
-    ) {
-        if errorPresentation.flowError.title != nil,
-           let customTitle = errorPresentation.title
-        {
-            if let message = errorPresentation.message {
-                self = Text("\(Text(customTitle))\n\(Text(message))")
-            } else {
-                self = Text(customTitle)
-            }
-        } else {
-#if DEBUG
-            if let message = errorPresentation.message {
-                self = Text(message)
-            } else {
-                self = Text(verbatim: "DEBUG: \(errorPresentation.flowError.error)")
-            }
-#else
-            if let message = errorPresentation.message {
-                self = Text(message)
-            } else {
-                return nil
-            }
-#endif
-        }
+extension ErrorPresentation.Message {
+    public func formatted<F>(_ format: F) -> F.FormatOutput
+    where F: Foundation.FormatStyle, F.FormatInput == Self
+    {
+        format.format(self)
     }
 }

@@ -102,8 +102,8 @@ import SwiftUI
     /// The caught error.
     public let error: any Error
     
-    /// A customized title.
-    let title: TextContent?
+    /// The name identifying the failed action.
+    public var failedActionName: TextContent?
     
     /// The eventual cancel action.
     ///
@@ -151,7 +151,7 @@ import SwiftUI
     
     private init(
         error: any Error,
-        title: TextContent?,
+        failedActionName: TextContent?,
         cancelAction: CancelErrorAction?,
         retryAction: ErrorAction?,
         supplementaryActions: [ErrorAction],
@@ -159,7 +159,7 @@ import SwiftUI
         executionToken: ExecutionToken)
     {
         self.error = error
-        self.title = title
+        self.failedActionName = failedActionName
         self.cancelAction = cancelAction
         self.retryAction = retryAction
         self.supplementaryActions = supplementaryActions
@@ -207,7 +207,7 @@ import SwiftUI
         
         self.init(
             error: error,
-            title: nil,
+            failedActionName: nil,
             cancelAction: nil,
             retryAction: nil,
             supplementaryActions: [],
@@ -306,7 +306,7 @@ extension FlowError {
         let oldCancelAction = self.cancelAction
         return FlowError(
             error: self.error,
-            title: self.title,
+            failedActionName: self.failedActionName,
             cancelAction: CancelErrorAction(
                 title: title ?? oldCancelAction?.title,
                 perform: { cancelReason in
@@ -390,7 +390,7 @@ extension FlowError {
         let oldRetryAction = self.retryAction
         return FlowError(
             error: self.error,
-            title: self.title,
+            failedActionName: self.failedActionName,
             cancelAction: self.cancelAction,
             retryAction: ErrorAction(title: title) {
                 oldRetryAction?.perform()
@@ -449,7 +449,7 @@ extension FlowError {
     public func droppingRetryAction() -> FlowError {
         FlowError(
             error: self.error,
-            title: self.title,
+            failedActionName: self.failedActionName,
             cancelAction: self.cancelAction,
             retryAction: nil,
             supplementaryActions: self.supplementaryActions,
@@ -516,7 +516,7 @@ extension FlowError {
     public func appendingAction(_ action: ErrorAction) -> FlowError {
         return FlowError(
             error: self.error,
-            title: self.title,
+            failedActionName: self.failedActionName,
             cancelAction: self.cancelAction,
             retryAction: self.retryAction,
             supplementaryActions: self.supplementaryActions + [action],
@@ -533,7 +533,7 @@ extension FlowError {
         let oldFinally = self.finally
         return FlowError(
             error: self.error,
-            title: self.title,
+            failedActionName: self.failedActionName,
             cancelAction: self.cancelAction,
             retryAction: self.retryAction,
             supplementaryActions: self.supplementaryActions,
@@ -546,15 +546,15 @@ extension FlowError {
     
     /// Sets the title of the flow error to a string without localization.
     @_disfavoredOverload
-    public func withTitle(_ title: String) -> FlowError {
-        withTitle(verbatim: title)
+    public func withFailedActionName(_ title: String) -> FlowError {
+        withFailedActionName(verbatim: title)
     }
     
     /// Sets the title of the flow error to a string without localization.
-    public func withTitle(verbatim title: String) -> FlowError {
+    public func withFailedActionName(verbatim title: String) -> FlowError {
         FlowError(
             error: self.error,
-            title: .verbatim(title),
+            failedActionName: .verbatim(title),
             cancelAction: self.cancelAction,
             retryAction: self.retryAction,
             supplementaryActions: self.supplementaryActions,
@@ -563,10 +563,10 @@ extension FlowError {
     }
     
     /// Sets the title of the flow error to a localized string.
-    public func withTitle(_ title: LocalizedStringResource) -> FlowError {
+    public func withFailedActionName(_ title: LocalizedStringResource) -> FlowError {
         FlowError(
             error: self.error,
-            title: .resource(title),
+            failedActionName: .resource(title),
             cancelAction: self.cancelAction,
             retryAction: self.retryAction,
             supplementaryActions: self.supplementaryActions,
@@ -578,7 +578,7 @@ extension FlowError {
     public func withError(_ error: any Error) -> FlowError {
         FlowError(
             error: error,
-            title: self.title,
+            failedActionName: self.failedActionName,
             cancelAction: self.cancelAction,
             retryAction: self.retryAction,
             supplementaryActions: self.supplementaryActions,

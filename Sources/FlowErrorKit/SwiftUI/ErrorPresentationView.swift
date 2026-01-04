@@ -182,13 +182,15 @@ private struct LegacyErrorPresentationView<Label: View, Description: View, Actio
     var cancelActionVisible: Bool
     var footer: Footer
     
-    public typealias Label = ErrorPresentationLabel
+    public typealias Label = SwiftUI.Label<Text, Image>
     
     public struct Description: View {
         var errorPresentation: ErrorPresentation
         
         public var body: some View {
-            Text(messageFor: errorPresentation)
+            if let alertMessage = errorPresentation.alertMessage {
+                Text(alertMessage, format: .text)
+            }
         }
     }
     
@@ -223,7 +225,7 @@ private struct LegacyErrorPresentationView<Label: View, Description: View, Actio
             Button(role: action.role.map(ButtonRole.init(role:))) {
                 flowError.performAction(action)
             } label: {
-                Text(action)
+                Text(action.title, format: .text)
             }
         }
         
@@ -231,7 +233,7 @@ private struct LegacyErrorPresentationView<Label: View, Description: View, Actio
             Button(role: action.role.map(ButtonRole.init(role:))) {
                 flowError.performAction(action)
             } label: {
-                Text(action)
+                Text(action.title, format: .text)
             }
         }
         
@@ -239,29 +241,24 @@ private struct LegacyErrorPresentationView<Label: View, Description: View, Actio
             Button(role: .cancel) {
                 flowError.performCancelAction()
             } label: {
-                cancelActionText
-            }
-        }
-        
-        var cancelActionText: Text {
-            let defaulText: Text
-            if flowError.retryAction == nil && flowError.supplementaryActions.isEmpty {
-                // Only possible action is cancel.
-                defaulText = Text(.ok)
-            } else {
-                defaulText = Text(.cancel)
-            }
-            
-            if let cancelAction = flowError.cancelAction {
-                return Text(cancelAction) ?? defaulText
-            } else {
-                return defaulText
+                if let title = flowError.cancelAction?.title {
+                    Text(title, format: .text)
+                } else if flowError.retryAction == nil && flowError.supplementaryActions.isEmpty {
+                    // Only possible action is cancel.
+                    Text(.ok)
+                } else {
+                    Text(.cancel)
+                }
             }
         }
     }
     
     func label() -> Self.Label {
-        ErrorPresentationLabel(errorPresentation)
+        SwiftUI.Label {
+            Text(errorPresentation.alertTitle, format: .text)
+        } icon: {
+            Image(systemName: errorPresentation.systemImage)
+        }
     }
     
     func description() -> Self.Description {

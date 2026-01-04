@@ -16,14 +16,16 @@ public struct AlertFlowErrorPresenter {
         
         public func body(content: Content) -> some View {
             content.alert(
-                errorPresentation.map { Text(titleFor: $0) } ?? Text(verbatim: ""),
+                errorPresentation.map { Text($0.alertTitle, format: .text) } ?? Text(verbatim: ""),
                 isPresented: context.isErrorPresented,
                 presenting: errorPresentation,
                 actions: {
                     errorActions($0.flowError)
                 },
                 message: { errorPresentation in
-                    Text(messageFor: errorPresentation)
+                    if let alertMessage = errorPresentation.alertMessage {
+                        Text(alertMessage, format: .text)
+                    }
                 })
         }
         
@@ -59,7 +61,7 @@ public struct AlertFlowErrorPresenter {
                         flowError.performAction(action)
                     }
                 } label: {
-                    Text(action)
+                    Text(action.title, format: .text)
                 }
             }
             
@@ -71,24 +73,19 @@ public struct AlertFlowErrorPresenter {
                         flowError.performAction(retryAction)
                     }
                 } label: {
-                    Text(retryAction)
+                    Text(retryAction.title, format: .text)
                 }
             }
         }
         
         private func cancelActionText(_ flowError: FlowError) -> Text {
-            let defaulText: Text
-            if flowError.retryAction == nil && flowError.supplementaryActions.isEmpty {
+            if let title = flowError.cancelAction?.title {
+                Text(title, format: .text)
+            } else if flowError.retryAction == nil && flowError.supplementaryActions.isEmpty {
                 // Only possible action is cancel.
-                defaulText = Text(.ok)
+                Text(.ok)
             } else {
-                defaulText = Text(.close)
-            }
-            
-            if let cancelAction = flowError.cancelAction {
-                return Text(cancelAction) ?? defaulText
-            } else {
-                return defaulText
+                Text(.close)
             }
         }
     }

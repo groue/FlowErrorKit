@@ -1,4 +1,4 @@
-import SwiftUI
+import Foundation
 
 // `ErrorAction` is a class because making it a struct would have made them less
 // easy to use with SwiftUI. `ForEach` likes to iterate collections of
@@ -32,11 +32,11 @@ import SwiftUI
 /// ### Supporting Types
 ///
 /// - ``ErrorActionRole``
-public final class ErrorAction: Identifiable, Sendable {
+public final class ErrorAction: Identifiable {
     /// The action role.
     public let role: ErrorActionRole?
     
-    let title: TextContent
+    public let title: TextContent
     
     // MUST NOT BE PUBLIC, because actions MUST be run by `FlowError`.
     /// The function called when the user selects the action.
@@ -79,17 +79,6 @@ public final class ErrorAction: Identifiable, Sendable {
     ) {
         self.init(title: .resource(title), role: role, perform: perform)
     }
-    
-    /// The title for the action, for the given locale.
-    public func title(locale: Locale = .current) -> String {
-        switch title {
-        case .verbatim(let title):
-            return title
-        case .resource(var title):
-            title.locale = locale
-            return String(localized: title)
-        }
-    }
 }
 
 /// The role of an ``ErrorAction``.
@@ -101,11 +90,4 @@ public final class ErrorAction: Identifiable, Sendable {
 /// - ``SwiftUI/ButtonRole/init(role:)``
 public enum ErrorActionRole: Sendable {
     case destructive
-}
-
-extension Text {
-    /// Creates a text view that displays the title of the action.
-    public init(_ errorAction: ErrorAction) {
-        self.init(errorAction.title)
-    }
 }
