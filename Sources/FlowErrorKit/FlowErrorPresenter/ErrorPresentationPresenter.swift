@@ -1,87 +1,54 @@
 import SwiftUI
-import os.log
 
 /// A presenter that updates an error presentation when a flow error occurs.
 struct ErrorPresentationPresenter {
-    @Binding var errorPresentation: ErrorPresentation?
-    
-    struct Modifier: ViewModifier {
-        var context: Context
-        
-        init(flowError: Binding<FlowError?>, errorPresentation: Binding<ErrorPresentation?>) {
-            context = Context(flowError: flowError, errorPresentation: errorPresentation)
-        }
-        
-        func body(content: Content) -> some View {
-            content
-            // Apply some modifier so that the dynamic property can do its job
-                .background { Color.clear }
-        }
-    }
-    
-    @MainActor
-    struct Context: DynamicProperty {
-        @Environment(\.errorHandler) private var handleError
-        @Binding var flowError: FlowError?
-        @Binding var errorPresentation: ErrorPresentation?
-        
-        /// The flow error that is currently presented.
-        ///
-        /// Note: it may be different from `errorPresentation.flowError`,
-        /// because error handlers can transform flow errors. In this
-        /// property we only store raw flow errors.
-        @State var presentedFlowError: FlowError?
-        
-        nonisolated func update() {
-            DispatchQueue.main.async {
-                // Only update error presentation if error identity has changed
-                if flowError === presentedFlowError {
-                    return
-                }
-                
-                guard let newFlowError = flowError else {
-                    // Error not set yet, or programmatically dismissed:
-                    // stop presenting any error.
-                    presentedFlowError = nil
-                    errorPresentation = nil
-                    return
-                }
-                
-                // Log new flow error
-                flowErrorLogger.error("❗️\(newFlowError.error)")
-                
-                // How is the new error presented?
-                guard let newPresentation = handleError.errorPresentation(newFlowError)
-                else {
-                    // The new error is not presented (ignored error):
-                    newFlowError.discard(.presentationCancelled)
-                    
-                    // Update flowError so that it reflects reality
-                    flowError = presentedFlowError
-                    return
-                }
-                
-                // Is there a conflict because we're already presenting an error?
-                if let presentedFlowError {
-                    presentedFlowError.discard(.presentationCancelled)
-                }
-                
-                // Update the presentation
-                presentedFlowError = newFlowError
-                errorPresentation = newPresentation
-            }
-        }
-    }
+    var errorPresentation: Binding<ErrorPresentation?>
 }
 
 extension ErrorPresentationPresenter: FlowErrorPresenter {
-    func makeModifier(flowError: Binding<FlowError?>) -> Modifier {
-        Modifier(flowError: flowError, errorPresentation: $errorPresentation)
+    func makeModifier(flowError: Binding<FlowError?>) -> ErrorPresentationModifier {
+        ErrorPresentationModifier(flowError: flowError, errorPresentation: errorPresentation)
+    }
+}
+
+struct ErrorPresentationModifier: ViewModifier {
+    @Binding var flowError: FlowError?
+    @Binding var errorPresentation: ErrorPresentation?
+    @Environment(\.errorHandler) private var errorHandler
+    
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: flowError?.id, initial: true, handleFlowError)
+    }
+    
+    private func handleFlowError() {
+        if let flowError {
+            if let newPresentation = errorHandler.errorPresentation(flowError) {
+                // Replace the current presentation, if any.
+                if let errorPresentation {
+                    errorPresentation.flowError.discard(.presentationCancelled)
+                }
+                errorPresentation = newPresentation
+            } else {
+                // Presentation cancelled by error handler.
+                flowError.discard(.presentationCancelled)
+                // Don't discard current presentation, if any
+                if errorPresentation == nil {
+                    self.flowError = nil
+                }
+            }
+        } else if let errorPresentation {
+            // Flow error programmatically cancelled.
+            errorPresentation.flowError.discard(.presentationCancelled)
+            self.errorPresentation = nil
+        }
     }
 }
 
 #if DEBUG
-private struct MyError: Error { }
+private struct MyError: Error {
+    var value: Int = Int.random(in: 1...1000)
+}
 
 private struct MyView: View {
     @State private var flowError: FlowError?

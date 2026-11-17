@@ -9,32 +9,10 @@ import IssueReporting
 /// with the `allowMultipleActionExecutions` flag, or the user might not
 /// be able to select an action multiple times from the error
 /// presentation view (such as an "Open Settings" supplementary action).
-///
-/// ## Topics
-///
-/// ### Supporting Types
-///
-/// - ``ErrorPresentationContent``
 public struct ErrorPresentationView<Footer: View>: View {
-    @Environment(\.errorHandler) var handleError
-    
-    enum Source {
-        case errorPresentation(ErrorPresentation)
-        case flowError(FlowError)
-    }
-    var source: Source
+    var errorPresentation: ErrorPresentation
     var cancelActionVisible: Bool
     var footer: Footer
-    
-    init(
-        source: Source,
-        cancelActionVisible: Bool,
-        @ViewBuilder footer: (() -> Footer))
-    {
-        self.source = source
-        self.cancelActionVisible = cancelActionVisible
-        self.footer = footer()
-    }
     
     /// Creates a view that displays an error presentation.
     ///
@@ -47,153 +25,48 @@ public struct ErrorPresentationView<Footer: View>: View {
         cancelActionVisible: Bool = false,
         @ViewBuilder footer: (() -> Footer) = { EmptyView() })
     {
-        self.init(
-            source: .errorPresentation(errorPresentation),
-            cancelActionVisible: cancelActionVisible,
-            footer: footer)
-    }
-    
-    /// Creates a view that displays a flow error.
-    ///
-    /// The error presentation is determined by the flow error handlers
-    /// registered in the SwiftUI environment. Those handlers must not
-    /// return ``FlowErrorHandling/cancel``.
-    ///
-    /// - parameter flowError: A flow error.
-    /// - parameter cancelActionVisible: Whether the cancel action should
-    ///   be visible.
-    /// - parameter footer: A view to display below error actions.
-    public init(
-        _ flowError: FlowError,
-        cancelActionVisible: Bool = false,
-        @ViewBuilder footer: (() -> Footer) = { EmptyView() })
-    {
-        self.init(
-            source: .flowError(flowError),
-            cancelActionVisible: cancelActionVisible,
-            footer: footer)
-    }
-    
-    /// Creates a view that displays an error.
-    ///
-    /// The error presentation is determined by the flow error handlers
-    /// registered in the SwiftUI environment. Those handlers must not
-    /// return ``FlowErrorHandling/cancel``.
-    ///
-    /// - parameter error: An error.
-    /// - parameter cancelActionVisible: Whether the cancel action should
-    ///   be visible.
-    /// - parameter footer: A view to display below error actions.
-    public init(
-        _ error: any Error,
-        cancelActionVisible: Bool = false,
-        @ViewBuilder footer: (() -> Footer) = { EmptyView() })
-    {
-        self.init(
-            FlowError(error: error),
-            cancelActionVisible: cancelActionVisible,
-            footer: footer)
+        self.errorPresentation = errorPresentation
+        self.cancelActionVisible = cancelActionVisible
+        self.footer = footer()
     }
     
     public var body: some View {
-        if #available(iOS 17.0, *) {
-            ContentUnavailableView.error(
-                errorPresentation,
-                cancelActionVisible: cancelActionVisible,
-                footer: { footer })
-        } else {
-            legacyContent
-        }
-    }
-    
-    private var errorPresentation: ErrorPresentation {
-        switch source {
-        case let .errorPresentation(errorPresentation):
-            return errorPresentation
-        case let .flowError(flowError):
-            if let errorPresentation = handleError.errorPresentation(flowError) {
-                return errorPresentation
-            } else {
-                // TODO: we should make it statically impossible for ErrorPresentationView to have to deal with `.cancel` error handling.
-                // For example, the user should provide specific code to run
-                // when the error is "cancelled".
-                reportIssue("""
-                    ErrorPresentationView displays an error that was \
-                    resolved to FlowErrorHandling.cancel: \(flowError.error)
-                    """)
-                return ErrorPresentation(flowError: flowError)
-            }
-        }
-    }
-    
-    private var legacyContent: some View {
-        let content = ErrorPresentationContent(
-            errorPresentation: errorPresentation,
+        ContentUnavailableView.error(
+            errorPresentation,
             cancelActionVisible: cancelActionVisible,
-            footer: footer)
-        
-        return LegacyErrorPresentationView(
-            label: content.label,
-            description: content.description,
-            actions: content.actions)
+            footer: { footer })
     }
 }
 
-/// A view that displays an `ErrorPresentation` when
-/// `ContentUnavailableView` is not available.
-private struct LegacyErrorPresentationView<Label: View, Description: View, Actions: View>: View {
-    let label: Label
-    let description: Description
-    let actions: Actions
-    
-    init(
-        @ViewBuilder label: () -> Label,
-        @ViewBuilder description: () -> Description = { EmptyView() },
-        @ViewBuilder actions: () -> Actions = { EmptyView() })
+// MARK: - ContentUnavailableView
+
+extension ContentUnavailableView {
+    /// Creates a `ContentUnavailableView` instance that conveys an
+    /// error state.
+    ///
+    /// - parameter errorPresentation: An error presentation.
+    /// - parameter cancelActionVisible: Whether the cancel action should
+    ///   be visible.
+    /// - parameter footer: A view to display below error actions.
+    @MainActor
+    static func error<Footer: View>(
+        _ errorPresentation: ErrorPresentation,
+        cancelActionVisible: Bool = false,
+        @ViewBuilder footer: () -> Footer)
+    -> ContentUnavailableView<Label, Description, Actions>
+    where Label == ErrorPresentationContent<Footer>.Label,
+          Description == ErrorPresentationContent<Footer>.Description,
+          Actions == ErrorPresentationContent<Footer>.Actions
     {
-        self.label = label()
-        self.description = description()
-        self.actions = actions()
-    }
-    
-    var body: some View {
-        // Mimic appearance of ContentUnavailableView
-        VStack(spacing: 20) {
-            VStack(spacing: 4) {
-                label
-                    .labelStyle(ErrorLabelSyle())
-                
-                description
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-            
-            VStack {
-                actions
-                    .controlSize(.small)
-                    .buttonBorderShape(.capsule)
-                    .buttonStyle(.bordered)
-            }
-        }
-        .padding(.horizontal)
-        .multilineTextAlignment(.center)
-        .frame(maxHeight: .infinity)
-    }
-    
-    struct ErrorLabelSyle: LabelStyle {
-        func makeBody(configuration: Configuration) -> some View {
-            VStack(spacing: 20) {
-                configuration.icon
-                    .imageScale(.large)
-                    .font(.largeTitle)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.secondary)
-                
-                configuration.title
-                    .font(.title2)
-                    .fontWeight(.bold)
-            }
-        }
+        let content = ErrorPresentationContent<Footer>(
+            errorPresentation: errorPresentation,
+            cancelActionVisible: cancelActionVisible,
+            footer: footer())
+        
+        return ContentUnavailableView(
+            label: content.label,
+            description: content.description,
+            actions: content.actions)
     }
 }
 
@@ -204,7 +77,7 @@ private struct LegacyErrorPresentationView<Label: View, Description: View, Actio
 /// You don’t create this type directly. FlowErrorKit creates it when you
 /// build an ``ErrorPresentationView``, or an error `ContentUnavailableView`.
 @MainActor
-public struct ErrorPresentationContent<Footer: View> {
+struct ErrorPresentationContent<Footer: View> {
     var errorPresentation: ErrorPresentation
     var cancelActionVisible: Bool
     var footer: Footer
@@ -378,22 +251,5 @@ struct PreviewError: Error { }
         }
     )
     .disabled(true)
-}
-
-#Preview("Direct Error or FlowError") {
-    VStack {
-        ErrorPresentationView(PreviewError())
-        
-        Divider()
-        
-        ErrorPresentationView(FlowError(error: PreviewError()).onRetry { })
-        
-        Divider()
-        
-        ErrorPresentationView(PreviewError())
-            .handleError { flowError in
-                    .present(ErrorPresentation(title: "Hey", flowError: flowError))
-            }
-    }
 }
 #endif

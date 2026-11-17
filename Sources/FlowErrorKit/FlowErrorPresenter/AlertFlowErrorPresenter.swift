@@ -1,193 +1,136 @@
-import Combine
 import SwiftUI
-import os.log
 
 /// A presenter that presents an alert when a flow error occurs.
 public struct AlertFlowErrorPresenter {
+}
+
+extension AlertFlowErrorPresenter: FlowErrorPresenter {
     public struct Modifier: ViewModifier {
         @Binding var flowError: FlowError?
-        private var context: Context
-        private var errorPresentation: ErrorPresentation? {
-            context.errorPresentation
-        }
-
-        init(flowError: Binding<FlowError?>) {
-            self._flowError = flowError
-            self.context = Context(flowError: flowError)
+        
+        private struct AlertItem: Identifiable {
+            var id: FlowError.ID { flowError.id }
+            var errorPresentation: ErrorPresentation
+            var flowError: FlowError { errorPresentation.flowError }
         }
         
-        public func body(content: Content) -> some View {
-            content.alert(
-                errorPresentation?.title ?? "",
-                isPresented: context.isErrorPresented,
-                presenting: errorPresentation,
-                actions: {
-                    errorActions($0.flowError)
-                },
-                message: { errorPresentation in
-                    if let message = errorPresentation.message {
-                        Text(message)
+        @Environment(\.errorHandler) private var errorHandler
+        @State private var alertItem: AlertItem?
+        private var dismissableAlertItem: Binding<AlertItem?> {
+            Binding(
+                get: { alertItem },
+                set: { newItem in
+                    // Set flowError to nil when alert is dismissed
+                    if newItem == nil, let alertItem, alertItem.id == flowError?.id {
+                        flowError = nil
                     }
+                    alertItem = newItem
                 })
         }
         
-        @ViewBuilder private func errorActions(_ flowError: FlowError) -> some View {
-            Button(cancelTitle(flowError), role: .cancel) {
-                // Run user code on the next runloop cycle, so that it can
-                // immediately present another error.
-                DispatchQueue.main.async {
-                    flowError.performCancelAction()
+        public func body(content: Content) -> some View {
+            content
+                .alert(
+                    alertTitle,
+                    item: dismissableAlertItem,
+                    actions: actions,
+                    message: {
+                        if let message = $0.errorPresentation.message {
+                            Text(message)
+                        }
+                    })
+                .onChange(of: flowError?.id, initial: true, handleFlowError)
+                .onDisappear(perform: didDisappear)
+        }
+        
+        private func handleFlowError() {
+            if let flowError {
+                if let errorPresentation = errorHandler.errorPresentation(flowError) {
+                    if alertItem != nil {
+                        // Can't present because an alert is already presented.
+                        flowError.discard(.presentationCancelled)
+                    } else {
+                        // Present an alert.
+                        // The delay is a workaround for an iOS bug.
+                        Task {
+                            try? await Task.sleep(for: .seconds(0.1))
+                            if self.flowError?.id == flowError.id {
+                                alertItem = AlertItem(errorPresentation: errorPresentation)
+                            }
+                        }
+                    }
+                } else {
+                    // Presentation cancelled by error handler.
+                    flowError.discard(.presentationCancelled)
+                    // Don't discard current alert, if any
+                    if alertItem == nil {
+                        self.flowError = nil
+                    }
                 }
+            } else if let alertItem {
+                // Flow error programmatically cancelled.
+                alertItem.flowError.discard(.presentationCancelled)
+                self.alertItem = nil
+            }
+        }
+        
+        private func didDisappear() {
+            if let flowError {
+                flowError.discard(.presentationCancelled)
+                self.flowError = nil
+            }
+            if let alertItem {
+                alertItem.flowError.discard(.presentationCancelled)
+                self.alertItem = nil
+            }
+        }
+        
+        @ViewBuilder
+        private func actions(_ presentedAlertItem: AlertItem) -> some View {
+            let flowError = presentedAlertItem.flowError
+            
+            Button(cancelButtonTitle(flowError), role: .cancel) {
+                perform(presentedAlertItem) { $0.performCancelAction() }
             }
             
             ForEach(flowError.supplementaryActions) { action in
                 Button(action.title, role: action.role.map(ButtonRole.init(role:))) {
-                    // Run user code on the next runloop cycle, so that it can
-                    // immediately present another error.
-                    DispatchQueue.main.async {
-                        flowError.performAction(action)
-                    }
+                    perform(presentedAlertItem) { $0.performAction(action) }
                 }
             }
             
             if let retryAction = flowError.retryAction {
                 Button(retryAction.title, role: retryAction.role.map(ButtonRole.init(role:))) {
-                    // Run user code on the next runloop cycle, so that it can
-                    // immediately present another error.
-                    DispatchQueue.main.async {
-                        flowError.performAction(retryAction)
-                    }
+                    perform(presentedAlertItem) { $0.performAction(retryAction) }
                 }
             }
         }
         
-        private func cancelTitle(_ flowError: FlowError) -> String {
+        private func perform(_ presentedAlertItem: AlertItem, action: (FlowError) -> Void) {
+            guard alertItem?.id == presentedAlertItem.id else {
+                // This alert item is no longer presented
+                return
+            }
+            action(presentedAlertItem.flowError)
+        }
+        
+        
+        private var alertTitle: String {
+            alertItem?.errorPresentation.title ?? ""
+        }
+        
+        private func cancelButtonTitle(_ flowError: FlowError) -> String {
             if let cancelTitle = flowError.cancelTitle {
                 return cancelTitle
             } else if flowError.retryAction == nil && flowError.supplementaryActions.isEmpty {
                 // Only possible action is cancel.
                 return String(localized: .ok, bundle: .module)
             } else {
-                return String(localized: .close, bundle: .module)
+                return String(localized: .cancel, bundle: .module)
             }
         }
     }
     
-    /// A DynamicProperty that updates the view when a flowError binding changes.
-    @MainActor
-    private struct Context: DynamicProperty {
-        @Environment(\.errorHandler) private var handleError
-        
-        /// A binding to the presented flow error.
-        @Binding var flowError: FlowError?
-        
-        /// Inner state, tracks the currently presented error.
-        @StateObject private var core = Core()
-        
-        /// The current error presentation.
-        var errorPresentation: ErrorPresentation? {
-            core.errorPresentation
-        }
-        
-        /// A binding to a Boolean value that determines whether to present the
-        /// error alert.
-        var isErrorPresented: Binding<Bool> {
-            Binding(
-                get: { core.errorPresentation != nil },
-                set: { presented in
-                    if presented == false {
-                        // TODO: this triggers a runtime warning when the error
-                        // is programmatically dismissed. But when we postpone
-                        // this code with DispatchQueue.main.async, this breaks
-                        // the retry button (nothing happens when the retry
-                        // button should present another alert). To investigate.
-                        if flowError === core.presentedFlowError {
-                            flowError = nil
-                        } else {
-                            core.presentedFlowError?.discard(.presentationCancelled)
-                        }
-                        core.presentedFlowError = nil
-                        core.errorPresentation = nil
-                    }
-                })
-        }
-        
-        nonisolated func update() {
-            // Avoid the "Publishing changes from within view updates is not allowed" warning
-            // by changing the error presentation on the next runloop cycle.
-            DispatchQueue.main.async {
-                core.updateErrorPresentation(
-                    flowError: flowError,
-                    handleError: handleError,
-                    onCancelledPresentation: { (cancelledFlowError, cancelReason) in
-                        // Update the flowError binding so that it reflects reality
-                        flowError = core.presentedFlowError
-                        cancelledFlowError.discard(cancelReason)
-                    })
-            }
-        }
-        
-        @MainActor
-        private final class Core: ObservableObject {
-            /// The current error presentation.
-            @Published var errorPresentation: ErrorPresentation?
-            
-            /// The flow error that is currently presented.
-            ///
-            /// Note: it may be different from `errorPresentation.flowError`,
-            /// because error handlers can transform flow errors. In this
-            /// property we only store raw flow errors.
-            var presentedFlowError: FlowError?
-            
-            /// - parameter onCancelledPresentation: A function that
-            ///   is called if its flow error argument could not be presented.
-            func updateErrorPresentation(
-                flowError newFlowError: FlowError?,
-                handleError: FlowErrorHandlerChain,
-                onCancelledPresentation: (_ cancelledFlowError: FlowError, _ cancelReason: ErrorCancelReason) -> Void)
-            {
-                // Only update error presentation if error identity has changed
-                if newFlowError === self.presentedFlowError {
-                    return
-                }
-                
-                guard let newFlowError else {
-                    // Error not set yet, or programmatically dismissed:
-                    // stop presenting any error.
-                    self.presentedFlowError = nil
-                    self.errorPresentation = nil
-                    return
-                }
-                
-                // Log new flow error
-                flowErrorLogger.error("❗️\(newFlowError.error)")
-                
-                // How is the new error presented?
-                guard let newPresentation = handleError.errorPresentation(newFlowError) else {
-                    // The new error is not presented (ignored error):
-                    onCancelledPresentation(newFlowError, .presentationCancelled)
-                    return
-                }
-                
-                // Is there a conflict because we're already presenting an error?
-                guard presentedFlowError == nil else {
-                    // Don't replace the alert with another one: cancel the
-                    // new error.
-                    onCancelledPresentation(newPresentation.flowError, .presentationCancelled)
-                    return
-                }
-                
-                // Update the presentation
-                self.presentedFlowError = newFlowError
-                self.errorPresentation = newPresentation
-            }
-        }
-    }
-    
-    public init() { }
-}
-
-extension AlertFlowErrorPresenter: FlowErrorPresenter {
     public func makeModifier(flowError: Binding<FlowError?>) -> Modifier {
         Modifier(flowError: flowError)
     }
@@ -206,7 +149,7 @@ private struct MyError: Error { }
 private struct MyView: View {
     @State private var flowError: FlowError?
     @State var isSuccess = false
-
+    
     var body: some View {
         VStack {
             Button {
@@ -231,7 +174,7 @@ private struct MyView: View {
         // Capture and present the flow error
         .presentError($flowError, with: .alert)
     }
-
+    
     func performFailableAction() {
         do {
             if Bool.random() {

@@ -7,7 +7,7 @@ let package = Package(
     name: "FlowErrorKit",
     defaultLocalization: "en",
     platforms: [
-        .iOS(.v16),
+        .iOS(.v17),
         .macOS(.v14),
     ],
     products: [

@@ -39,8 +39,6 @@ Presenting a flow error means displaying the error in SwiftUI views.
 - ``SwiftUICore/View/presentError(_:with:)-3oiaj``
 - ``ErrorPresentation``
 - ``ErrorPresentationView``
-- ``SwiftUI/ContentUnavailableView/error(_:cancelActionVisible:)``
-- ``SwiftUI/ContentUnavailableView/error(_:cancelActionVisible:footer:)``
 - ``FlowErrorPresenter``
 
 ### SwiftUI Environment

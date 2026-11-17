@@ -10,9 +10,6 @@ extension String.LocalizationValue {
     /// The title of a "Cancel" button.
     static let cancel: Self = "Cancel"
     
-    /// The title of a "Close" button.
-    static let close: Self = "Close"
-    
     /// The title of an "OK" button.
     static let ok: Self = "OK"
     
