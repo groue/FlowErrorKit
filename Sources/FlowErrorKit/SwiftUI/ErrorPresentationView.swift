@@ -1,5 +1,5 @@
 import SwiftUI
-import XCTestDynamicOverlay
+import IssueReporting
 
 // MARK: - ErrorPresentationView
 
@@ -117,7 +117,7 @@ public struct ErrorPresentationView<Footer: View>: View {
                 // TODO: we should make it statically impossible for ErrorPresentationView to have to deal with `.cancel` error handling.
                 // For example, the user should provide specific code to run
                 // when the error is "cancelled".
-                XCTFail("""
+                reportIssue("""
                     ErrorPresentationView displays an error that was \
                     resolved to FlowErrorHandling.cancel: \(flowError.error)
                     """)

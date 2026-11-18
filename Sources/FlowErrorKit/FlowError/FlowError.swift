@@ -1,5 +1,5 @@
 import Foundation
-import XCTestDynamicOverlay
+import IssueReporting
 
 // `FlowError` is a class, not a struct, for multiple reasons:
 //
@@ -38,7 +38,7 @@ import XCTestDynamicOverlay
         func execute(_ action: () -> Void) {
             isExecutedMutex.withLock { isExecuted in
                 if isExecuted && allowMultipleActionExecutions == false {
-                    XCTFail("""
+                    reportIssue("""
                         Multiple FlowError actions executed.
                         
                         This might be unexpected by the code that created the \

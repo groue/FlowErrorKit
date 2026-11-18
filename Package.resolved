@@ -1,5 +1,5 @@
 {
-  "originHash" : "aaf52a336e77c1273f8f938423e2679f4daa676021fd57d4dbdd884596f686dc",
+  "originHash" : "6115ab9a1a9491e0deea5d9238688cb3543d1b77d0415cdfc8b372336c26b3d2",
   "pins" : [
     {
       "identity" : "swift-issue-reporting",
@@ -8,15 +8,6 @@
       "state" : {
         "revision" : "b23bb4493c439d3e05152bc167014235ba3d47fc",
         "version" : "2.1.2"
-      }
-    },
-    {
-      "identity" : "xctest-dynamic-overlay",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
-      "state" : {
-        "revision" : "d9308ad679143c26a30dec52daefe82f54af2b82",
-        "version" : "1.13.1"
       }
     }
   ],

@@ -14,13 +14,13 @@ let package = Package(
         .library(name: "FlowErrorKit", targets: ["FlowErrorKit"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/pointfreeco/xctest-dynamic-overlay", from: "1.4.2"),
+        .package(url: "https://github.com/pointfreeco/swift-issue-reporting", from: "2.1.0"),
     ],
     targets: [
         .target(
             name: "FlowErrorKit",
             dependencies: [
-                .product(name: "XCTestDynamicOverlay", package: "xctest-dynamic-overlay"),
+                .product(name: "IssueReporting", package: "swift-issue-reporting"),
             ],
             resources: [
                 .process("Resources")
