@@ -45,7 +45,7 @@ extension AlertFlowErrorPresenter: FlowErrorPresenter {
         
         private func handleFlowError() {
             if let flowError {
-                if let errorPresentation = errorHandler.errorPresentation(flowError) {
+                if let errorPresentation = errorHandler.handle(flowError).errorPresentation {
                     if alertItem != nil {
                         // Can't present because an alert is already presented.
                         flowError.discard(.presentationCancelled)

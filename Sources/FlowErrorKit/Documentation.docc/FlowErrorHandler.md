@@ -131,7 +131,8 @@ struct MyView: View {
 
 ### Customize flow error handling
 
-- ``handle(_:)``
+- ``handle(_:)-(FlowError)``
+- ``handle(_:)-(Error)``
 
 ### Built-in Error Handlers
 

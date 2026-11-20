@@ -23,7 +23,7 @@ struct ErrorPresentationModifier: ViewModifier {
     
     private func handleFlowError() {
         if let flowError {
-            if let newPresentation = errorHandler.errorPresentation(flowError) {
+            if let newPresentation = errorHandler.handle(flowError).errorPresentation {
                 // Replace the current presentation, if any.
                 if let errorPresentation {
                     errorPresentation.flowError.discard(.presentationCancelled)

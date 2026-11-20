@@ -44,41 +44,6 @@ public struct FlowErrorHandlerChain: FlowErrorHandler {
         
         return .pass(flowError)
     }
-    
-    /// Returns how the error should be handled.
-    ///
-    /// See ``handle(_:)-83zz5``.
-    public func handle(_ error: Error) -> FlowErrorHandling {
-        handle(FlowError(error: error))
-    }
-
-    /// Returns the error presentation for the flow error.
-    ///
-    /// Use this method when you implement custom error presenters that
-    /// conform to ``FlowErrorPresenter``.
-    ///
-    /// - Parameters:
-    ///   - flowError: A flow error.
-    ///   - defaultPresentation: A closure that returns a default error
-    ///     presentation. By default, it returns a redacted
-    ///     presentation.
-    public func errorPresentation(
-        _ flowError: FlowError,
-        defaultPresentation: (FlowError) -> ErrorPresentation
-        = { ErrorPresentation(flowError: $0) })
-    -> ErrorPresentation?
-    {
-        switch handle(flowError) {
-        case .cancel:
-            return nil
-            
-        case let .pass(flowError):
-            return defaultPresentation(flowError)
-            
-        case let .present(presentation):
-            return presentation
-        }
-    }
 }
 
 extension FlowErrorHandlerChain {

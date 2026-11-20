@@ -147,10 +147,17 @@
     func handle(_ flowError: FlowError) -> FlowErrorHandling
 }
 
+extension FlowErrorHandler {
+    /// Returns how an error should be handled.
+    public func handle(_ error: Error) -> FlowErrorHandling {
+        handle(FlowError(error: error))
+    }
+}
+
 /// `FlowErrorHandling` specifies how a flow error should be handled.
 ///
 /// You return a `FlowErrorHandling` from ``FlowErrorHandler/handle(_:)``.
-public enum FlowErrorHandling {
+@MainActor public enum FlowErrorHandling {
     /// Pass the flow error to the next error handler in the chain of flow
     /// error handlers (see ``FlowErrorHandler``).
     ///
@@ -170,4 +177,19 @@ public enum FlowErrorHandling {
     /// A flow error can be transformed before it is presented:
     /// see ``FlowErrorHandler/handle(_:)`` for some examples.
     case present(ErrorPresentation)
+    
+    /// Returns an error presentation if the error should be presented.
+    public var errorPresentation: ErrorPresentation? {
+        switch self {
+        case .cancel:
+            return nil
+            
+        case let .pass(flowError):
+            return ErrorPresentation(flowError: flowError)
+            
+        case let .present(presentation):
+            return presentation
+        }
+    }
 }
+

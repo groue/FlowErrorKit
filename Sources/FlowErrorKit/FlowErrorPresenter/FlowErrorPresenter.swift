@@ -4,7 +4,7 @@ import SwiftUI
 ///
 /// A flow error presenter returns a view modifier that presents
 /// flow errors. To do so, it calls the
-/// ``FlowErrorHandlerChain/errorPresentation(_:defaultPresentation:)``
+/// ``FlowErrorHandlerChain/handle(_:)-(FlowError)``
 /// method on the chain of flow error handlers registered in the SwiftUI
 /// environment (see ``SwiftUICore/EnvironmentValues/errorHandler``).
 ///
