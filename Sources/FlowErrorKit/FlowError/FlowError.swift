@@ -16,7 +16,7 @@ import IssueReporting
 //   action is ever run (its `executionToken`).
 //
 // See documentation in FlowError.md.
-@MainActor public final class FlowError {
+@MainActor public final class FlowError: Identifiable {
     /// An execution token helps a `FlowError` make sure that at most one error
     /// action is run.
     @MainActor private class ExecutionToken: CustomStringConvertible {
@@ -101,6 +101,10 @@ import IssueReporting
     private struct CancelAction {
         var title: String?
         var perform: @MainActor (ErrorCancelReason) -> Void
+    }
+    
+    nonisolated public var id: ObjectIdentifier {
+        ObjectIdentifier(executionToken)
     }
     
     /// The caught error.
