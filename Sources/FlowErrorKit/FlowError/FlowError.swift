@@ -65,7 +65,7 @@ import IssueReporting
                           .onCancel { _ in /* may be executed multiple times */ }
                           .onRetry { /* may be executed multiple times */ }
                           .finally { /* may be executed multiple times */ }
-                    """)
+                        """)
                 }
                 
                 isExecuted = true
