@@ -1,5 +1,6 @@
 import Foundation
 import IssueReporting
+import Synchronization
 
 // `FlowError` is a class, not a struct, for multiple reasons:
 //
