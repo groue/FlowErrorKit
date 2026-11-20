@@ -76,8 +76,8 @@ struct VerbatimErrorHandler: FlowErrorHandler {
             return .pass(flowError)
         }
         
-        return .present(ErrorPresentation(
-            title: error.errorDescription,
-            flowError: flowError))
+        let title = error.errorDescription
+        let errorPresentation = ErrorPresentation(title: title, flowError: flowError)
+        return .present(errorPresentation)
     }
 }
