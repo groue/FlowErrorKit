@@ -1,5 +1,5 @@
-import SwiftUI
 import IssueReporting
+import SwiftUI
 
 // MARK: - ErrorPresentationView
 
@@ -10,9 +10,27 @@ import IssueReporting
 /// be able to select an action multiple times from the error
 /// presentation view (such as an "Open Settings" supplementary action).
 public struct ErrorPresentationView<Footer: View>: View {
-    var errorPresentation: ErrorPresentation
-    var cancelActionVisible: Bool
-    var footer: Footer
+    private enum ErrorSource: Equatable {
+        case errorPresentation(ErrorPresentation)
+        case flowError(FlowError)
+        
+        static func == (lhs: Self, rhs: Self) -> Bool {
+            switch(lhs, rhs) {
+            case (.errorPresentation(let lhs), .errorPresentation(let rhs)):
+                lhs == rhs
+            case (.flowError(let lhs), .flowError(let rhs)):
+                lhs.id == rhs.id
+            default:
+                false
+            }
+        }
+    }
+    
+    @Environment(\.errorHandler) private var errorHandler
+    @State private var errorPresentation: ErrorPresentation?
+    private var source: ErrorSource
+    private var cancelActionVisible: Bool
+    private var footer: Footer
     
     /// Creates a view that displays an error presentation.
     ///
@@ -25,16 +43,51 @@ public struct ErrorPresentationView<Footer: View>: View {
         cancelActionVisible: Bool = false,
         @ViewBuilder footer: (() -> Footer) = { EmptyView() })
     {
-        self.errorPresentation = errorPresentation
+        self.source = .errorPresentation(errorPresentation)
+        self.cancelActionVisible = cancelActionVisible
+        self.footer = footer()
+    }
+    
+    /// Creates a view that handles a flow error and displays an error
+    /// presentation.
+    ///
+    /// - parameter flowError: A flow error.
+    /// - parameter cancelActionVisible: Whether the cancel action should
+    ///   be visible.
+    /// - parameter footer: A view to display below error actions.
+    public init(
+        _ flowError: FlowError,
+        cancelActionVisible: Bool = false,
+        @ViewBuilder footer: (() -> Footer) = { EmptyView() })
+    {
+        self.source = .flowError(flowError)
         self.cancelActionVisible = cancelActionVisible
         self.footer = footer()
     }
     
     public var body: some View {
-        ContentUnavailableView.error(
-            errorPresentation,
-            cancelActionVisible: cancelActionVisible,
-            footer: { footer })
+        content.onChange(of: source, initial: true) {
+            switch source {
+            case .errorPresentation(let presentation):
+                errorPresentation = presentation
+            case .flowError(let flowError):
+                errorPresentation?.flowError.discard(.presentationCancelled)
+                let presentation = errorHandler.handle(flowError).errorPresentation
+                errorPresentation = presentation ?? ErrorPresentation(flowError: flowError)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var content: some View {
+        if let errorPresentation {
+            ContentUnavailableView.error(
+                errorPresentation,
+                cancelActionVisible: cancelActionVisible,
+                footer: { footer })
+        } else {
+            Color.clear
+        }
     }
 }
 
@@ -49,7 +102,7 @@ extension ContentUnavailableView {
     ///   be visible.
     /// - parameter footer: A view to display below error actions.
     @MainActor
-    static func error<Footer: View>(
+    fileprivate static func error<Footer: View>(
         _ errorPresentation: ErrorPresentation,
         cancelActionVisible: Bool = false,
         @ViewBuilder footer: () -> Footer)
@@ -205,7 +258,7 @@ struct PreviewError: Error { }
     }
 }
 
-#Preview("Retry") {
+#Preview("Retry ErrorPresentation") {
     ErrorPresentationView(
         ErrorPresentation(
             title: "An Error Occurred",
@@ -213,6 +266,11 @@ struct PreviewError: Error { }
             flowError: FlowError(error: PreviewError()).onRetry { }
         )
     )
+}
+
+#Preview("Retry FlowError") {
+    let flowError = FlowError(error: PreviewError()).onRetry { }
+    ErrorPresentationView(flowError)
 }
 
 #Preview("Visible Cancel Action") {
