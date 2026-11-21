@@ -4,7 +4,7 @@
 
 ## Overview
 
-In the typical setup, a `FlowError` is created when an `Error` is caught, and the view presents the error with the ``SwiftUICore/View/presentError(_:with:)-7sikc`` method:
+In the typical setup, a `FlowError` is created when an `Error` is caught, and the view presents the error with the ``SwiftUICore/View/presentError(_:with:)-(_,FlowErrorPresenter)`` method:
 
 ```swift
 import FlowErrorKit
@@ -110,7 +110,7 @@ There are two exceptions:
 - ``redactedTitle``
 - ``retryAction``
 - ``supplementaryActions``
-- ``isSameError(as:)``
+- ``id``
 
 ### Performing actions
 

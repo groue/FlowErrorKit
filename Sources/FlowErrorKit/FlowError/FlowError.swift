@@ -2,22 +2,8 @@ import Foundation
 import IssueReporting
 import Synchronization
 
-// `FlowError` is a class, not a struct, for multiple reasons:
-//
-// - One instance of `FlowError` is considered as an "error event", with an
-//   identity. Instances are created at specific points in time: when a view
-//   model catches an error.
-//
-// - The identity of a `FlowError` helps integration with SwiftUI: instances can
-//   be compared with `===`, and only trigger side effects when they change.
-//   Comparison based on `Equatable` would be impossible because flow errors are
-//   made of non-Equatable properties (error, closures, etc.)
-//
-// - `FlowError` has one shared mutable state, that makes sure at most one error
-//   action is ever run (its `executionToken`).
-//
 // See documentation in FlowError.md.
-@MainActor public final class FlowError: Identifiable {
+@MainActor public struct FlowError: Identifiable {
     /// An execution token helps a `FlowError` make sure that at most one error
     /// action is run.
     @MainActor private class ExecutionToken: CustomStringConvertible {
@@ -104,12 +90,27 @@ import Synchronization
         var perform: @MainActor (ErrorCancelReason) -> Void
     }
     
+    /// The identifier of the `FlowError` identifies the creation of the
+    /// `FlowError` instance from a particular error.
+    ///
+    /// When two `FlowError` instances share the same id, they originate
+    /// from the same error.
+    ///
+    /// For example:
+    ///
+    /// ```swift
+    /// let flowError = FlowError(error: error)
+    /// let other = FlowError(error: otherError)
+    /// let derived = flowError.onRetry { ... }
+    /// flowError.id = other.id   // false
+    /// flowError.id = derived.id // true
+    /// ```
     nonisolated public var id: ObjectIdentifier {
         ObjectIdentifier(executionToken)
     }
     
     /// The caught error.
-    public let error: any Error
+    public private(set) var error: any Error
     
     /// A customized generic error title.
     ///
@@ -125,7 +126,7 @@ import Synchronization
     ///
     /// To execute the cancel action, see ``performCancelAction()``
     /// and ``discard(_:)``.
-    private let cancelAction: CancelAction?
+    private var cancelAction: CancelAction?
     
     /// The customized title for buttons that perform the cancel action.
     public var cancelTitle: String? {
@@ -138,15 +139,15 @@ import Synchronization
     ///
     /// For more information about recoverable errors,
     /// see ``FlowErrorHandler/handle(_:)``.
-    public let retryAction: ErrorAction?
+    public private(set) var retryAction: ErrorAction?
     
     /// The supplementary actions.
     ///
     /// To execute those actions, use ``performAction(_:)``.
-    public let supplementaryActions: [ErrorAction]
+    public private(set) var supplementaryActions: [ErrorAction]
     
     /// A closure to run at the end of all error actions.
-    private let finally: (@MainActor () -> Void)?
+    private(set) var finally: (@MainActor () -> Void)?
     
     /// `executionToken` makes sure at most one error action is run.
     ///
@@ -170,24 +171,6 @@ import Synchronization
     /// The token is checked, and set, in the `execute(_:)` and
     /// `executeUnlessExecuted(_:)` methods.
     private let executionToken: ExecutionToken
-    
-    private init(
-        error: any Error,
-        redactedTitle: String?,
-        cancelAction: CancelAction?,
-        retryAction: ErrorAction?,
-        supplementaryActions: [ErrorAction],
-        finally: (@MainActor () -> Void)?,
-        executionToken: ExecutionToken)
-    {
-        self.error = error
-        self.redactedTitle = redactedTitle
-        self.cancelAction = cancelAction
-        self.retryAction = retryAction
-        self.supplementaryActions = supplementaryActions
-        self.finally = finally
-        self.executionToken = executionToken
-    }
     
     /// Creates a `FlowError` from an error.
     ///
@@ -222,31 +205,19 @@ import Synchronization
     ///       to select an action multiple times from an
     ///       `ErrorPresentationView` (such as an "Open Settings"
     ///       supplementary action).
-    public convenience init(
+    public init(
         error: any Error,
         allowMultipleActionExecutions: Bool = false)
     {
-        let executionToken = ExecutionToken(allowMultipleActionExecutions: allowMultipleActionExecutions)
-        
-        self.init(
-            error: error,
-            redactedTitle: nil,
-            cancelAction: nil,
-            retryAction: nil,
-            supplementaryActions: [],
-            finally: nil,
-            executionToken: executionToken)
-    }
-    
-    /// Returns whether both flow errors originate from the same caught error.
-    public func isSameError(as flowError: FlowError) -> Bool {
-        executionToken === flowError.executionToken
+        self.error = error
+        self.supplementaryActions = []
+        self.executionToken = ExecutionToken(allowMultipleActionExecutions: allowMultipleActionExecutions)
     }
 }
 
 extension FlowError: CustomStringConvertible {
     nonisolated public var description: String {
-        "<FlowError identity: \(executionToken) error: \(error)>"
+        "<FlowError id: \(executionToken) error: \(error)>"
     }
 }
 
@@ -348,19 +319,14 @@ extension FlowError {
         _ perform: @escaping @MainActor (_ cancelReason: ErrorCancelReason) -> Void
     ) -> FlowError {
         let oldCancelAction = self.cancelAction
-        return FlowError(
-            error: self.error,
-            redactedTitle: self.redactedTitle,
-            cancelAction: CancelAction(
-                title: title ?? oldCancelAction?.title,
-                perform: { cancelReason in
-                    oldCancelAction?.perform(cancelReason)
-                    perform(cancelReason)
-                }),
-            retryAction: self.retryAction,
-            supplementaryActions: self.supplementaryActions,
-            finally: self.finally,
-            executionToken: self.executionToken)
+        var result = self
+        result.cancelAction = CancelAction(
+            title: title ?? oldCancelAction?.title,
+            perform: { cancelReason in
+                oldCancelAction?.perform(cancelReason)
+                perform(cancelReason)
+            })
+        return result
     }
     
     // This overload is necessary because a default argument for title is
@@ -397,17 +363,12 @@ extension FlowError {
         _ perform: @escaping @MainActor () -> Void
     ) -> FlowError {
         let oldRetryAction = self.retryAction
-        return FlowError(
-            error: self.error,
-            redactedTitle: self.redactedTitle,
-            cancelAction: self.cancelAction,
-            retryAction: ErrorAction(title: title) {
-                oldRetryAction?.perform()
-                perform()
-            },
-            supplementaryActions: self.supplementaryActions,
-            finally: self.finally,
-            executionToken: self.executionToken) // share the execution token
+        var result = self
+        result.retryAction = ErrorAction(title: title) {
+            oldRetryAction?.perform()
+            perform()
+        }
+        return result
     }
     
     /// Returns a flow error without any retry action (useful for
@@ -416,14 +377,9 @@ extension FlowError {
     /// Use this method for unrecoverable errors, in order to prevent the
     /// user from retrying the failed action.
     public func droppingRetryAction() -> FlowError {
-        FlowError(
-            error: self.error,
-            redactedTitle: self.redactedTitle,
-            cancelAction: self.cancelAction,
-            retryAction: nil,
-            supplementaryActions: self.supplementaryActions,
-            finally: self.finally,
-            executionToken: self.executionToken) // share the execution token
+        var result = self
+        result.retryAction = nil
+        return result
     }
     
     /// Returns a flow error with an extra supplementary action.
@@ -452,14 +408,9 @@ extension FlowError {
     /// If the user selects this action, the cancel action is run first,
     /// with the ``ErrorCancelReason/supplementaryActionPerformed`` reason.
     public func appendingAction(_ action: ErrorAction) -> FlowError {
-        return FlowError(
-            error: self.error,
-            redactedTitle: self.redactedTitle,
-            cancelAction: self.cancelAction,
-            retryAction: self.retryAction,
-            supplementaryActions: self.supplementaryActions + [action],
-            finally: self.finally,
-            executionToken: self.executionToken) // share the execution token
+        var result = self
+        result.supplementaryActions = supplementaryActions + [action]
+        return result
     }
     
     /// Returns a flow error that executes the provided closure after any
@@ -472,44 +423,29 @@ extension FlowError {
     ///   actions (cancel, retry, supplementary actions).
     public func finally(_ perform: @escaping @MainActor () -> Void) -> FlowError {
         let oldFinally = self.finally
-        return FlowError(
-            error: self.error,
-            redactedTitle: self.redactedTitle,
-            cancelAction: self.cancelAction,
-            retryAction: self.retryAction,
-            supplementaryActions: self.supplementaryActions,
-            finally: {
-                oldFinally?()
-                perform()
-            },
-            executionToken: self.executionToken) // share the execution token
+        var result = self
+        result.finally = {
+            oldFinally?()
+            perform()
+        }
+        return result
     }
     
     /// Returns a flow error with a customized generic error title.
     ///
     /// See ``redactedTitle`` for more information.
     public func withRedactedTitle(_ title: String) -> FlowError {
-        FlowError(
-            error: self.error,
-            redactedTitle: title,
-            cancelAction: self.cancelAction,
-            retryAction: self.retryAction,
-            supplementaryActions: self.supplementaryActions,
-            finally: self.finally,
-            executionToken: self.executionToken) // share the execution token
+        var result = self
+        result.redactedTitle = title
+        return result
     }
     
     /// Returns a flow error with a different error (useful when unwrapping
     /// underlying errors).
     public func withError(_ error: any Error) -> FlowError {
-        FlowError(
-            error: error,
-            redactedTitle: self.redactedTitle,
-            cancelAction: self.cancelAction,
-            retryAction: self.retryAction,
-            supplementaryActions: self.supplementaryActions,
-            finally: self.finally,
-            executionToken: self.executionToken) // share the execution token
+        var result = self
+        result.error = error
+        return result
     }
 }
 

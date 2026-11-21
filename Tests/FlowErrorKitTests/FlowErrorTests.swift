@@ -91,7 +91,7 @@ struct FlowErrorTests {
     }
     
     @Test
-    func isSameErrorAs() {
+    func flowErrorIdentity() {
         let flowError1 = FlowError(error: TestError())
         let flowError2 = flowError1
             .onCancel { _ in }
@@ -101,20 +101,11 @@ struct FlowErrorTests {
             .appendingAction("Title") { }
             .finally { }
             .withError(CancellationError())
-            .withRedactedTitle("Title")
+            .withTitle("Title")
         let flowError3 = FlowError(error: TestError())
         
-        #expect(flowError1.isSameError(as: flowError1))
-        #expect(flowError1.isSameError(as: flowError2))
-        #expect(!flowError1.isSameError(as: flowError3))
-        
-        #expect(flowError2.isSameError(as: flowError1))
-        #expect(flowError2.isSameError(as: flowError2))
-        #expect(!flowError2.isSameError(as: flowError3))
-        
-        #expect(!flowError3.isSameError(as: flowError1))
-        #expect(!flowError3.isSameError(as: flowError2))
-        #expect(flowError3.isSameError(as: flowError3))
+        #expect(flowError1.id == flowError2.id)
+        #expect(flowError1.id != flowError3.id)
     }
     
     @Test

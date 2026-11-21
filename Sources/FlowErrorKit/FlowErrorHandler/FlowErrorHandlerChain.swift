@@ -17,7 +17,7 @@ public struct FlowErrorHandlerChain: FlowErrorHandler {
     /// Returns a chain extended with flow error handlers.
     ///
     /// The first element in the `handlers` array is invoked
-    /// first by ``handle(_:)-83zz5``.
+    /// first by ``handle(_:)``.
     public func prepending(_ handlers: [any FlowErrorHandler]) -> Self {
         FlowErrorHandlerChain(handlers + self.handlers)
     }
