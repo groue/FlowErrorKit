@@ -1,7 +1,7 @@
 import Foundation
 
 /// `ErrorPresentation` describes how an error should be presented to the user.
-public struct ErrorPresentation {
+public struct ErrorPresentation: Equatable {
     /// The default system symbol image for errors.
     public static let defaultSystemImage = "exclamationmark.circle"
     
@@ -55,5 +55,10 @@ public struct ErrorPresentation {
         
         self.systemImage = systemImage
         self.flowError = flowError
+    }
+    
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        (lhs.title, lhs.message, lhs.systemImage, lhs.flowError.id)
+        == (rhs.title, rhs.message, rhs.systemImage, rhs.flowError.id)
     }
 }
