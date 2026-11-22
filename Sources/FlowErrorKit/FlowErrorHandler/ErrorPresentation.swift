@@ -20,7 +20,7 @@ public struct ErrorPresentation: Equatable {
     /// Creates an `ErrorPresentation`.
     ///
     /// - parameter title: The error title. If nil, the title is the
-    ///   ``FlowError/redactedTitle`` of the flow error, or
+    ///   ``FlowError/title`` of the flow error, or
     ///   "An Error Occurred". If both `title` and the redacted title are
     ///   present, the redacted title is used as the title, and `title` is
     ///   moved into the message.
@@ -35,16 +35,16 @@ public struct ErrorPresentation: Equatable {
         systemImage: String = Self.defaultSystemImage,
         flowError: FlowError
     ) {
-        if let titlePresence = title.presence, let redactedTitle = flowError.redactedTitle.presence {
+        if let titlePresence = title.presence, let flowErrorTitle = flowError.title.presence {
             // The redacted title wins, and the provided title is moved
             // into the message.
-            self.title = redactedTitle
+            self.title = flowErrorTitle
             self.message = [titlePresence, message.presence]
                 .compactMap { $0 }
                 .joined(separator: "\n\n")
         } else {
             self.title = title.presence
-            ?? flowError.redactedTitle.presence
+            ?? flowError.title.presence
             ?? String(localized: .defaultErrorTitle, bundle: .module)
 #if DEBUG
             self.message = message ?? "DEBUG: \(flowError.error)"

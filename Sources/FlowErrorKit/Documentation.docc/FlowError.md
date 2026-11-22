@@ -107,9 +107,9 @@ There are two exceptions:
 
 - ``error``
 - ``cancelTitle``
-- ``redactedTitle``
 - ``retryAction``
 - ``supplementaryActions``
+- ``title``
 - ``id``
 
 ### Performing actions
@@ -128,7 +128,7 @@ There are two exceptions:
 - ``droppingRetryAction()``
 - ``finally(_:)``
 - ``withError(_:)``
-- ``withRedactedTitle(_:)``
+- ``withTitle(_:)``
 
 ### Supporting Types
 

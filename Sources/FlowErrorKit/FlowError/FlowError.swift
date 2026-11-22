@@ -112,17 +112,14 @@ import Synchronization
     /// The caught error.
     public private(set) var error: any Error
     
-    /// A customized generic error title.
+    /// A customized error title.
     ///
-    /// When set, it replaces the default "An Error Occurred" title. If an
-    /// ``ErrorPresentation`` is created with an explicit title, this
-    /// redacted title has priority, and the presentation title is displayed
-    /// as a plain message.
-    ///
-    /// See ``withRedactedTitle(_:)``.
-    public private(set) var redactedTitle: String?
+    /// To set to title, use ``withTitle(_:)``.
+    public private(set) var title: String?
     
     /// The optional cancel action.
+    ///
+    /// To set the cancel action, use ``onCancel(_:_:)``.
     ///
     /// To execute the cancel action, see ``performCancelAction()``
     /// and ``discard(_:)``.
@@ -135,6 +132,8 @@ import Synchronization
     
     /// The optional retry action, for recoverable errors.
     ///
+    /// To set the retry action, use ``onRetry(_:)``.
+    ///
     /// To execute the retry action, use ``performAction(_:)``.
     ///
     /// For more information about recoverable errors,
@@ -142,6 +141,8 @@ import Synchronization
     public private(set) var retryAction: ErrorAction?
     
     /// The supplementary actions.
+    ///
+    /// To add supplementary actions, use ``appendingAction(_:role:perform:)``.
     ///
     /// To execute those actions, use ``performAction(_:)``.
     public private(set) var supplementaryActions: [ErrorAction]
@@ -431,12 +432,52 @@ extension FlowError {
         return result
     }
     
-    /// Returns a flow error with a customized generic error title.
+    /// Returns a flow error with a customized title.
     ///
-    /// See ``redactedTitle`` for more information.
-    public func withRedactedTitle(_ title: String) -> FlowError {
+    /// The provided title is displayed prominently, and has priority over
+    /// the title provided by flow error handlers. For example, compare the
+    /// alerts presented in the sample code below:
+    ///
+    /// ```swift
+    /// // First version
+    /// func updateMessages() async {
+    ///     do {
+    ///         messages = try await fetchMessages()
+    ///     } catch {
+    ///         // ┌──────────────────────────┐
+    ///         // │ The Internet connection  │ <- provided by the handler of URLError
+    ///         // │ appears to be offline.   │
+    ///         // │                          │
+    ///         // │          [ OK ]          │
+    ///         // └──────────────────────────┘
+    ///         flowError = FlowError(error: error)
+    ///     }
+    /// }
+    ///
+    /// // Second version
+    /// func updateMessages() async {
+    ///     do {
+    ///         messages = try await fetchMessages()
+    ///     } catch {
+    ///         // Alert title is provided by the FlowError itself:
+    ///         // ┌──────────────────────────────┐
+    ///         // │ Could not fetch new messages │ <- the FlowError title
+    ///         // │                              │
+    ///         // │ The Internet connection      │ <- provided by the handler of URLError
+    ///         // │ appears to be offline.       │
+    ///         // │                              │
+    ///         // │            [ OK ]            │
+    ///         // └──────────────────────────────┘
+    ///         flowError = FlowError(error: error)
+    ///             .withTitle("Could not fetch new messages")
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// See ``title`` for more information.
+    public func withTitle(_ title: String) -> FlowError {
         var result = self
-        result.redactedTitle = title
+        result.title = title
         return result
     }
     

@@ -40,15 +40,15 @@ struct FlowErrorTests {
     }
     
     @Test
-    func redactedTitleProperty() {
+    func titleProperty() {
         var flowError = FlowError(error: TestError())
-        #expect(flowError.redactedTitle == nil)
+        #expect(flowError.title == nil)
         
-        flowError = flowError.withRedactedTitle("Title 1")
-        #expect(flowError.redactedTitle == "Title 1")
+        flowError = flowError.withTitle("Title 1")
+        #expect(flowError.title == "Title 1")
         
-        flowError = flowError.withRedactedTitle("Title 2")
-        #expect(flowError.redactedTitle == "Title 2")
+        flowError = flowError.withTitle("Title 2")
+        #expect(flowError.title == "Title 2")
     }
     
     @Test

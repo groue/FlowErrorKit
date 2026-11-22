@@ -34,40 +34,40 @@ struct ErrorPresentationTests {
     }
 
     @Test
-    func blank_title_falls_back_to_redacted_title() {
+    func blank_title_falls_back_to_flow_error_title() {
         let presentation = ErrorPresentation(
             title: " ",
             message: "Message",
-            flowError: FlowError(error: TestError()).withRedactedTitle("Redacted"))
-        #expect(presentation.title == "Redacted")
+            flowError: FlowError(error: TestError()).withTitle("Failure"))
+        #expect(presentation.title == "Failure")
         #expect(presentation.message == "Message")
     }
 
     @Test
-    func redacted_title_without_title() {
+    func flow_error_title_without_title() {
         let presentation = ErrorPresentation(
             message: "Message",
-            flowError: FlowError(error: TestError()).withRedactedTitle("Redacted"))
-        #expect(presentation.title == "Redacted")
+            flowError: FlowError(error: TestError()).withTitle("Failure"))
+        #expect(presentation.title == "Failure")
         #expect(presentation.message == "Message")
     }
 
     @Test
-    func redacted_title_moves_title_into_message() {
+    func flow_error_title_moves_title_into_message() {
         let presentation = ErrorPresentation(
             title: "Title",
             message: "Message",
-            flowError: FlowError(error: TestError()).withRedactedTitle("Redacted"))
-        #expect(presentation.title == "Redacted")
+            flowError: FlowError(error: TestError()).withTitle("Failure"))
+        #expect(presentation.title == "Failure")
         #expect(presentation.message == "Title\n\nMessage")
     }
 
     @Test
-    func redacted_title_moves_title_into_message_without_message() {
+    func flow_error_title_moves_title_into_message_without_message() {
         let presentation = ErrorPresentation(
             title: "Title",
-            flowError: FlowError(error: TestError()).withRedactedTitle("Redacted"))
-        #expect(presentation.title == "Redacted")
+            flowError: FlowError(error: TestError()).withTitle("Failure"))
+        #expect(presentation.title == "Failure")
         #expect(presentation.message == "Title")
     }
 
