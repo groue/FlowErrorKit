@@ -24,16 +24,6 @@
         }
       }
     },
-    "Alert (MVVM)" : {
-      "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alerte (MVVM)"
-          }
-        }
-      }
-    },
     "Can you guess which error is thrown?" : {
       "localizations" : {
         "fr" : {
@@ -392,16 +382,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Erreur d’autorisation"
-          }
-        }
-      }
-    },
-    "Unauthorized Error (MVVM)" : {
-      "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Erreur d’autorisation (MVVM)"
           }
         }
       }

@@ -33,21 +33,11 @@ struct DemosNavigationView: View {
                     BasicAlertView()
                         .navigationTitle("Error Basics")
                 }
-                NavigationLink("Alert (MVVM)") {
-                    BasicAlertMVVMView()
-                        .navigationTitle("Error Basics")
-                }
                 NavigationLink {
                     BasicErrorPresentationView()
                         .navigationTitle("Error Basics")
                 } label: {
                     Text(verbatim: "ErrorPresentationView")
-                }
-                NavigationLink {
-                    BasicErrorPresentationMVVMView()
-                        .navigationTitle("Error Basics")
-                } label: {
-                    Text(verbatim: "ErrorPresentationView (MVVM)")
                 }
             }
         } header: {
@@ -77,21 +67,11 @@ struct DemosNavigationView: View {
                     AlertWithErrorActionsView(error: URLError.networkConnectionLostError)
                         .navigationTitle("Error Actions")
                 }
-                NavigationLink("Alert (MVVM)") {
-                    AlertWithErrorActionsMVVMView(error: URLError.networkConnectionLostError)
-                        .navigationTitle("Error Actions")
-                }
                 NavigationLink {
                     ErrorPresentationViewWithErrorActionsView(error: URLError.networkConnectionLostError)
                         .navigationTitle("Error Actions")
                 } label: {
                     Text(verbatim: "ErrorPresentationView")
-                }
-                NavigationLink {
-                    ErrorPresentationViewWithErrorActionsMVVMView(error: URLError.networkConnectionLostError)
-                        .navigationTitle("Error Actions")
-                } label: {
-                    Text(verbatim: "ErrorPresentationView (MVVM)")
                 }
             }
         } header: {
@@ -110,21 +90,11 @@ struct DemosNavigationView: View {
                     AlertWithErrorActionsView(error: FrobnicateError.random())
                         .navigationTitle("Custom Presentation")
                 }
-                NavigationLink("Alert (MVVM)") {
-                    AlertWithErrorActionsMVVMView(error: FrobnicateError.random())
-                        .navigationTitle("Custom Presentation")
-                }
                 NavigationLink {
                     ErrorPresentationViewWithErrorActionsView(error: FrobnicateError.random())
                         .navigationTitle("Custom Presentation")
                 } label: {
                     Text(verbatim: "ErrorPresentationView")
-                }
-                NavigationLink {
-                    ErrorPresentationViewWithErrorActionsMVVMView(error: FrobnicateError.random())
-                        .navigationTitle("Custom Presentation")
-                } label: {
-                    Text(verbatim: "ErrorPresentationView (MVVM)")
                 }
             }
         } header: {
@@ -151,12 +121,6 @@ struct DemosNavigationView: View {
                         failureProbability: 1)
                     .navigationTitle("Ignored Error")
                 }
-                NavigationLink("Alert (MVVM)") {
-                    AlertWithErrorActionsMVVMView(
-                        error: CocoaError(.userCancelled),
-                        failureProbability: 1)
-                    .navigationTitle("Ignored Error")
-                }
                 NavigationLink {
                     ErrorPresentationViewWithErrorActionsView(
                         error: CocoaError(.userCancelled),
@@ -164,14 +128,6 @@ struct DemosNavigationView: View {
                     .navigationTitle("Ignored Error")
                 } label: {
                     Text(verbatim: "ErrorPresentationView")
-                }
-                NavigationLink {
-                    ErrorPresentationViewWithErrorActionsMVVMView(
-                        error: CocoaError(.userCancelled),
-                        failureProbability: 1)
-                    .navigationTitle("Ignored Error")
-                } label: {
-                    Text(verbatim: "ErrorPresentationView (MVVM)")
                 }
             }
         } header: {
@@ -215,12 +171,6 @@ struct DemosNavigationView: View {
                 NavigationLink("Unauthorized Error") {
                     AuthorizedView {
                         AlertWithErrorActionsView(error: UnauthorizedError())
-                    }
-                    .navigationTitle("Unauthorized Error")
-                }
-                NavigationLink("Unauthorized Error (MVVM)") {
-                    AuthorizedMVVMView {
-                        AlertWithErrorActionsMVVMView(error: UnauthorizedError())
                     }
                     .navigationTitle("Unauthorized Error")
                 }

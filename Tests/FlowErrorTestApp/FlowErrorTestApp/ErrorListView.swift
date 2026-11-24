@@ -2,7 +2,9 @@ import FlowErrorKit
 import SwiftUI
 
 struct ErrorListView: View {
-    @State var viewModel = ErrorListViewModel()
+    @State private var flowError: FlowError?
+    @State private var errorIsCancelled = false
+    @State private var validationErrorBackground = false
     
     var body: some View {
         NavigationView {
@@ -35,13 +37,13 @@ struct ErrorListView: View {
                 Group {
                     Section {
                         Button("Default Error") {
-                            viewModel.throwDefaultError()
+                            throwDefaultError()
                         }
                         Button("Default Error With Cancel Handler") {
-                            viewModel.throwDefaultErrorWithCancel()
+                            throwDefaultErrorWithCancel()
                         }
                         Button("Default Error With Retry Handler") {
-                            viewModel.throwDefaultErrorWithRetry()
+                            throwDefaultErrorWithRetry()
                         }
                     } header: {
                         header(
@@ -57,7 +59,7 @@ struct ErrorListView: View {
                                 display, the error message is hidden by default.
                                 """,
                                 """
-                                View models can specify, if they want, a **Cancel \
+                                Views can specify, if they want, a **Cancel \
                                 handler**, and a **Retry handler**. The error \
                                 alert then displays relevant buttons.
                                 """,
@@ -70,13 +72,13 @@ struct ErrorListView: View {
                     
                     Section {
                         Button("Customized Error") {
-                            viewModel.throwVerbatimError()
+                            throwVerbatimError()
                         }
                         Button("Customized Error With Cancel Handler") {
-                            viewModel.throwVerbatimErrorWithCancel()
+                            throwVerbatimErrorWithCancel()
                         }
                         Button("Customized Error With Retry Handler") {
-                            viewModel.throwVerbatimErrorWithRetry()
+                            throwVerbatimErrorWithRetry()
                         }
                     } header: {
                         header(
@@ -90,10 +92,10 @@ struct ErrorListView: View {
                     
                     Section {
                         Button("Ignored Error") {
-                            viewModel.throwIgnoredError()
+                            throwIgnoredError()
                         }
                         Button("Ignored Error With Cancel Handler") {
-                            viewModel.throwIgnoredErrorWithCancel()
+                            throwIgnoredErrorWithCancel()
                         }
                     } header: {
                         // swiftlint:disable vertical_parameter_alignment_on_call
@@ -112,13 +114,13 @@ struct ErrorListView: View {
                     
                     Section {
                         Button("Permission Error") {
-                            viewModel.throwPermissionError()
+                            throwPermissionError()
                         }
                         Button("Permission Error With Cancel Handler") {
-                            viewModel.throwPermissionErrorWithCancel()
+                            throwPermissionErrorWithCancel()
                         }
                         Button("Permission Error With Retry Handler") {
-                            viewModel.throwPermissionErrorWithRetry()
+                            throwPermissionErrorWithRetry()
                         }
                     } header: {
                         header(
@@ -137,7 +139,7 @@ struct ErrorListView: View {
                     
                     Section {
                         Button("Expired Session Error") {
-                            viewModel.throwExpiredSessionError()
+                            throwExpiredSessionError()
                         }
                     } header: {
                         header(
@@ -154,13 +156,13 @@ struct ErrorListView: View {
                     
                     Section {
                         Button("Code Signing Error") {
-                            viewModel.throwCodeSigningError()
+                            throwCodeSigningError()
                         }
                         Button("Code Signing Error With Cancel Handler") {
-                            viewModel.throwCodeSigningErrorWithCancel()
+                            throwCodeSigningErrorWithCancel()
                         }
                         Button("Code Signing Error With Retry Handler") {
-                            viewModel.throwCodeSigningErrorWithRetry()
+                            throwCodeSigningErrorWithRetry()
                         }
                     } header: {
                         header(
@@ -179,10 +181,10 @@ struct ErrorListView: View {
                     
                     Section {
                         Button("Validation Error") {
-                            viewModel.throwValidationError()
+                            throwValidationError()
                         }
                         Button("Validation Error With Cancel Handler") {
-                            viewModel.throwValidationErrorWithCancel()
+                            throwValidationErrorWithCancel()
                         }
                     } header: {
                         header(
@@ -190,10 +192,10 @@ struct ErrorListView: View {
                             message:
                                 """
                                 Validation errors are handled in a custom way by a \
-                                specific view model: the view model of this view.
+                                specific view: this view.
                                 """,
                                 """
-                                Here the view model replaces the error alert with \
+                                Here the view replaces the error alert with \
                                 a color change.
                                 """,
                                 """
@@ -206,7 +208,7 @@ struct ErrorListView: View {
                     
                     Section {
                         Button("Random Error With Retry Handler") {
-                            viewModel.throwRandomErrorWithRetry()
+                            throwRandomErrorWithRetry()
                         }
                     } header: {
                         header(title: "Random Error", message: """
@@ -218,10 +220,10 @@ struct ErrorListView: View {
                 Group {
                     Section {
                         Button("Error With Cancel Handler After Initial Error") {
-                            viewModel.throwTwoErrorsInARow()
+                            throwTwoErrorsInARow()
                         }
                         Button("Ignored Error With Cancel Handler After Initial Error") {
-                            viewModel.throwIgnoredErrorAfterInitialError()
+                            throwIgnoredErrorAfterInitialError()
                         }
                     } header: {
                         header(title: "Error Conflict", message: """
@@ -237,11 +239,11 @@ struct ErrorListView: View {
                     
                     Section {
                         Button("Dismissed Error With Cancel Handler") {
-                            viewModel.throwDismissedErrorWithCancel()
+                            throwDismissedErrorWithCancel()
                         }
                     } header: {
                         header(title: "Programmatic Error Dismissal", message: """
-                        When the view model decides to dismiss the error before \
+                        When the app decides to dismiss the error before \
                         the user does, the Cancel handler is **NOT** \
                         run. Wait 3 seconds for the error to be dismissed.
                         """)
@@ -253,8 +255,16 @@ struct ErrorListView: View {
                 statusBar
             }
         }
-        .presentError($viewModel.flowError, with: .alert)
-        .handleError(with: viewModel) // After error is presented, so that viewModel can handle errors
+        .presentError($flowError, with: .alert)
+        // After error is presented, so that validation errors are handled
+        .handleError(ofType: ValidationError.self) { _, _ in
+            validationErrorBackground = true
+            Task {
+                try? await Task.sleep(for: .seconds(0.5))
+                validationErrorBackground = false
+            }
+            return .cancel
+        }
     }
     
     /// A bar at the bottom of the screen that shows whether an alert is
@@ -262,10 +272,10 @@ struct ErrorListView: View {
     var statusBar: some View {
         HStack {
             Text("Alert visible")
-                .opacity(viewModel.flowError == nil ? 0.1 : 1)
+                .opacity(flowError == nil ? 0.1 : 1)
             Spacer()
             Text("Cancelled")
-                .foregroundStyle(viewModel.errorIsCancelled
+                .foregroundStyle(errorIsCancelled
                                  ? Color.primary
                                  : Color(uiColor: .quaternaryLabel))
         }
@@ -289,13 +299,267 @@ struct ErrorListView: View {
     }
     
     var errorBackgroundColor: Color {
-        if viewModel.validationErrorBackground {
+        if validationErrorBackground {
             return .red
         } else {
             return Color(uiColor: .secondarySystemGroupedBackground)
         }
     }
 }
+
+// MARK: - Actions
+
+extension ErrorListView {
+    // MARK: - Default Error
+    
+    func throwDefaultError() {
+        errorIsCancelled = false
+        do {
+            throw makeDefaultError()
+        } catch {
+            flowError = FlowError(error: error)
+        }
+    }
+    
+    func throwDefaultErrorWithCancel() {
+        errorIsCancelled = false
+        do {
+            throw makeDefaultError()
+        } catch {
+            flowError = FlowError(error: error)
+                .onCancel { _ in flashCancelled() }
+        }
+    }
+    
+    func throwDefaultErrorWithRetry() {
+        errorIsCancelled = false
+        do {
+            throw makeDefaultError()
+        } catch {
+            flowError = FlowError(error: error)
+                .onCancel { _ in flashCancelled() }
+                .onRetry(action: throwDefaultErrorWithRetry)
+        }
+    }
+    
+    // MARK: - VerbatimError
+    
+    func throwVerbatimError() {
+        errorIsCancelled = false
+        do {
+            throw VerbatimError(errorDescription: "Custom Error Message")
+        } catch {
+            flowError = FlowError(error: error)
+        }
+    }
+    
+    func throwVerbatimErrorWithCancel() {
+        errorIsCancelled = false
+        do {
+            throw VerbatimError(errorDescription: "Custom Error Message")
+        } catch {
+            flowError = FlowError(error: error)
+                .onCancel { _ in flashCancelled() }
+        }
+    }
+    
+    func throwVerbatimErrorWithRetry() {
+        errorIsCancelled = false
+        do {
+            throw VerbatimError(errorDescription: "Custom Error Message")
+        } catch {
+            flowError = FlowError(error: error)
+                .onCancel { _ in flashCancelled() }
+                .onRetry(action: throwVerbatimErrorWithRetry)
+        }
+    }
+    
+    // MARK: - IgnoredError
+    
+    func throwIgnoredError() {
+        errorIsCancelled = false
+        do {
+            throw IgnoredError()
+        } catch {
+            flowError = FlowError(error: error)
+        }
+    }
+    
+    func throwIgnoredErrorWithCancel() {
+        errorIsCancelled = false
+        do {
+            throw IgnoredError()
+        } catch {
+            flowError = FlowError(error: error)
+                .onCancel { _ in flashCancelled() }
+        }
+    }
+    
+    // MARK: - ValidationError
+    
+    func throwValidationError() {
+        errorIsCancelled = false
+        do {
+            throw ValidationError()
+        } catch {
+            flowError = FlowError(error: error)
+        }
+    }
+    
+    func throwValidationErrorWithCancel() {
+        errorIsCancelled = false
+        do {
+            throw ValidationError()
+        } catch {
+            flowError = FlowError(error: error)
+                .onCancel { _ in flashCancelled() }
+        }
+    }
+    
+    // MARK: - PermissionError
+    
+    func throwPermissionError() {
+        errorIsCancelled = false
+        do {
+            throw PermissionError()
+        } catch {
+            flowError = FlowError(error: error)
+        }
+    }
+    
+    func throwPermissionErrorWithCancel() {
+        errorIsCancelled = false
+        do {
+            throw PermissionError()
+        } catch {
+            flowError = FlowError(error: error)
+                .onCancel { _ in flashCancelled() }
+        }
+    }
+    
+    func throwPermissionErrorWithRetry() {
+        errorIsCancelled = false
+        do {
+            throw PermissionError()
+        } catch {
+            flowError = FlowError(error: error)
+                .onCancel { _ in flashCancelled() }
+                .onRetry(action: throwPermissionErrorWithRetry)
+        }
+    }
+    
+    // MARK: - ExpiredSessionError
+    
+    func throwExpiredSessionError() {
+        errorIsCancelled = false
+        do {
+            throw ExpiredSessionError()
+        } catch {
+            flowError = FlowError(error: error)
+                .onCancel { _ in flashCancelled() }
+        }
+    }
+    
+    // MARK: - CodeSigningError
+    
+    func throwCodeSigningError() {
+        errorIsCancelled = false
+        do {
+            throw CodeSigningError()
+        } catch {
+            flowError = FlowError(error: error)
+        }
+    }
+    
+    func throwCodeSigningErrorWithCancel() {
+        errorIsCancelled = false
+        do {
+            throw CodeSigningError()
+        } catch {
+            flowError = FlowError(error: error)
+                .onCancel { _ in flashCancelled() }
+        }
+    }
+    
+    func throwCodeSigningErrorWithRetry() {
+        errorIsCancelled = false
+        do {
+            throw CodeSigningError()
+        } catch {
+            flowError = FlowError(error: error)
+                .onCancel { _ in flashCancelled() }
+                .onRetry(action: throwCodeSigningErrorWithRetry)
+        }
+    }
+    
+    // MARK: - Random Error
+    
+    func throwRandomErrorWithRetry() {
+        do {
+            let errors: [Error] = [
+                makeDefaultError(),
+                IgnoredError(),
+                ValidationError(),
+                PermissionError(),
+                ExpiredSessionError(),
+                CodeSigningError(),
+                VerbatimError(errorDescription: "Not Implemented Yet"),
+            ]
+            throw errors.randomElement()!
+        } catch {
+            flowError = FlowError(error: error)
+                .onCancel { _ in flashCancelled() }
+                .onRetry(action: throwRandomErrorWithRetry)
+        }
+    }
+    
+    // MARK: - Error Conflicts
+    
+    func throwTwoErrorsInARow() {
+        errorIsCancelled = false
+        flowError = FlowError(error: VerbatimError(errorDescription: "First Error"))
+        Task {
+            try? await Task.sleep(for: .seconds(3))
+            flowError = FlowError(error: VerbatimError(errorDescription: "Second Error"))
+                .onCancel { _ in flashCancelled() }
+        }
+    }
+    
+    func throwIgnoredErrorAfterInitialError() {
+        errorIsCancelled = false
+        flowError = FlowError(error: VerbatimError(errorDescription: "First Error"))
+        Task {
+            try? await Task.sleep(for: .seconds(3))
+            flowError = FlowError(error: IgnoredError())
+                .onCancel { _ in flashCancelled() }
+        }
+    }
+    
+    func throwDismissedErrorWithCancel() {
+        errorIsCancelled = false
+        flowError = FlowError(error: makeDefaultError())
+            .onCancel { _ in flashCancelled() }
+        Task {
+            try? await Task.sleep(for: .seconds(3))
+            flowError = nil
+        }
+    }
+    
+    private func makeDefaultError() -> Error {
+        // An error that is not handled by any error handler.
+        ServerError(statusCode: 500)
+    }
+    
+    private func flashCancelled() {
+        errorIsCancelled = true
+        Task {
+            try? await Task.sleep(for: .seconds(0.5))
+            errorIsCancelled = false
+        }
+    }
+}
+
+struct ValidationError: Error { }
 
 struct MyView_Previews: PreviewProvider {
     static var previews: some View {

@@ -7,7 +7,7 @@ import SwiftUI
 // every action they create.
 //
 // Now, `ErrorAction` is a reference type, but it must not have any mutable
-// state. It is essential that an action registered by a view model or an error
+// state. It is essential that an action registered by an app or an error
 // handler in a `FlowError` cannot be altered. The peace of mind of the
 // developer needs this immutability.
 //
@@ -26,7 +26,7 @@ import SwiftUI
 /// you, please consider that `FlowError` preserves important invariants,
 /// such as making sure that only one error action is ever run. Actions
 /// cannot be executed directly, so that it is not possible to mess with
-/// the state of the view model that created the `FlowError`.
+/// the state of the view that created the `FlowError`.
 ///
 /// ## Topics
 ///

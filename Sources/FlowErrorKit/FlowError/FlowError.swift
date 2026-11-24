@@ -174,12 +174,12 @@ import Synchronization
     /// handlers to build new, altered `FlowError` instances, while preserving
     /// the guarantee that only one action will ever be executed:
     ///
-    /// 1. The view model creates a FlowError (FlowError #1)
-    /// 2. The FlowError is sent to the SwiftUI view
+    /// 1. A SwiftUI view creates a FlowError (FlowError #1)
+    /// 2. The FlowError is sent to the error presentation
     /// 3. Error handlers can alter the FlowError, and build FlowError #2,
     ///    FlowError #3, etc.
     /// 4. FlowError #4 is presented.
-    /// 5. Meanwhile, the view model still holds an instance of FlowError #1.
+    /// 5. Meanwhile, the view still holds an instance of FlowError #1.
     ///
     /// Because FlowError #1, #2, #3 and #4 all share the same execution token,
     /// executing an action from FlowError #4 prevents FlowError #1 from
@@ -194,11 +194,16 @@ import Synchronization
     /// For example:
     ///
     /// ```swift
-    /// // MyViewModel.swift
     /// import FlowErrorKit
+    /// import SwiftUI
     ///
-    /// final class MyViewModel: ObservableObject {
-    ///     @Published var flowError: FlowError?
+    /// struct MyView: View {
+    ///     @State private var flowError: FlowError?
+    ///
+    ///     var body: some View {
+    ///         Button("Try Me", action: performSomeAction)
+    ///             .presentError($flowError, with: .alert)
+    ///     }
     ///
     ///     func performSomeAction() {
     ///         do {
@@ -310,7 +315,7 @@ extension FlowError {
 // MARK: - Operators
 
 extension FlowError {
-    // Design note: some view models register IMPORTANT clean up code in their
+    // Design note: some apps register IMPORTANT clean up code in their
     // cancellation handler. No `FlowError` method should remove it:
     //
     // - Do not define a `droppingCancelAction()` method.

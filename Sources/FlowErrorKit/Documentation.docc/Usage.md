@@ -12,7 +12,7 @@ Error handling with FlowErrorKit is performed in three steps:
 
 ### Catch errors and turn them into FlowError
 
-This step is performed by a SwiftUI view, or the observable object (aka "view model") that feeds a SwiftUI view. We'll use plain SwiftUI views in our code samples, but all of them can be refactored with a view model.
+This step is performed by a SwiftUI view.
 
 ```swift
 import FlowErrorKit

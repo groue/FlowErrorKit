@@ -87,42 +87,72 @@ struct MyView: View {
 
 ### Observable Objects as FlowError Handlers
 
-When an observable object conforms to `FlowErrorHandler`, it can update its inner state for particular flow errors:
+When an observable object conforms to `FlowErrorHandler`, it can update its inner state for particular flow errors, thrown anywhere in the view hierarchy.
+
+In the example below, a form submission may fail because the user session has expired. Instead of presenting an alert, the session model, installed at the root of the app, signs the user out:
 
 ```swift
-// MyViewModel.swift
+// Session.swift
 import FlowErrorKit
+import Observation
 
-final class MyViewModel: ObservableObject {
-    // Updated when the view model catches a ValidationError.
-    @Published var errorLabel: String?
-    ...
+@MainActor @Observable final class Session {
+    var isSignedIn = true
 }
 
-extension MyViewModel: FlowErrorHandler {
+extension Session: FlowErrorHandler {
     func handle(_ flowError: FlowError) -> FlowErrorHandling {
-        if flowError.error is ValidationError {
-            // Don't present the error, and display
-            // a validation message instead:
-            self.errorLabel = "Please fix your input"
+        if flowError.error is UnauthorizedError {
+            // Don't present the error, and sign out instead.
+            isSignedIn = false
             return .cancel
         } else {
-            // Not a ValidationError: pass to the next error handler.
+            // Not an UnauthorizedError: pass to the next error handler.
             return .pass(flowError)
         }
     }
 }
 
-// MyView.swift
+// RootView.swift
 import FlowErrorKit
 import SwiftUI
 
-struct MyView: View {
-    @StateObject var viewModel = MyViewModel()
+struct RootView: View {
+    @State private var session = Session()
 
     var body: some View {
-        ContentView()
-            .handleError(with: viewModel)
+        Group {
+            if session.isSignedIn {
+                FormView()
+            } else {
+                SignInView()
+            }
+        }
+        .handleError(with: session)
+    }
+}
+
+// FormView.swift
+import FlowErrorKit
+import SwiftUI
+
+struct FormView: View {
+    @State private var name = ""
+    @State private var flowError: FlowError?
+
+    var body: some View {
+        Form {
+            TextField("Name", text: $name)
+            Button("Submit") {
+                do {
+                    // May throw UnauthorizedError
+                    try submit(name)
+                } catch {
+                    flowError = FlowError(error: error)
+                }
+            }
+        }
+        .presentError($flowError, with: .alert)
     }
 }
 ```
