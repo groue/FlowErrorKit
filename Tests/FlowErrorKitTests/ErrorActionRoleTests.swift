@@ -8,7 +8,7 @@ struct ErrorActionRoleTests {
     func conversion() {
         // A test that won't compile if we introduce a breaking change
         let actionRole = ErrorActionRole.destructive
-        let buttonRole = ButtonRole(role: actionRole)
+        let buttonRole = ButtonRole(actionRole)
         #expect(buttonRole == .destructive)
     }
 }

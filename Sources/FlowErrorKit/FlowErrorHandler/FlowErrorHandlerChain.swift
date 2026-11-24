@@ -1,6 +1,10 @@
 import Foundation
 
 /// A chain of flow error handlers.
+///
+/// You don't create a chain directly. Read the chain from the SwiftUI
+/// ``SwiftUICore/EnvironmentValues/errorHandler`` environment value, which
+/// defaults to ``default``.
 public struct FlowErrorHandlerChain: FlowErrorHandler {
     /// All handlers in the chain. The first element in the array is invoked
     /// first by `handle(_:)`.

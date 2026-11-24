@@ -1,5 +1,6 @@
 import CoreLocation
 import FlowErrorKit
+import SwiftUI
 import UIKit
 
 // Handles CoreLocation errors.
@@ -16,16 +17,16 @@ struct CLErrorHandler: FlowErrorHandler {
             // let the user grant the required permissions.
             let presentedFlowError = flowError
                 .droppingRetryAction()
-                .appendingAction(String(localized: "Open Settings")) {
+                .appendingAction("Open Settings") {
                     if let url = URL(string: UIApplication.openSettingsURLString) {
                         UIApplication.shared.open(url)
                     }
                 }
             
             return .present(ErrorPresentation(
-                title: String(localized: "Permission Required"),
-                message: String(localized: "Please grant access to your location in the Settings application."),
-                flowError: presentedFlowError))
+                flowError: presentedFlowError,
+                title: "Permission Required")
+                .withMessage("Please grant access to your location in the Settings application."))
             
         case CLError.geocodeCanceled:
             // Don't present this error
@@ -33,8 +34,8 @@ struct CLErrorHandler: FlowErrorHandler {
             
         default:
             return .present(ErrorPresentation(
-                message: error.localizedDescription,
-                flowError: flowError))
+                flowError: flowError,
+                message: error.localizedDescription))
         }
     }
 }

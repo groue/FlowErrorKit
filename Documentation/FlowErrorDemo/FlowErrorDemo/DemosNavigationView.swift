@@ -37,13 +37,17 @@ struct DemosNavigationView: View {
                     BasicAlertMVVMView()
                         .navigationTitle("Error Basics")
                 }
-                NavigationLink("ErrorPresentationView") {
+                NavigationLink {
                     BasicErrorPresentationView()
                         .navigationTitle("Error Basics")
+                } label: {
+                    Text(verbatim: "ErrorPresentationView")
                 }
-                NavigationLink("ErrorPresentationView (MVVM)") {
+                NavigationLink {
                     BasicErrorPresentationMVVMView()
                         .navigationTitle("Error Basics")
+                } label: {
+                    Text(verbatim: "ErrorPresentationView (MVVM)")
                 }
             }
         } header: {
@@ -77,13 +81,17 @@ struct DemosNavigationView: View {
                     AlertWithErrorActionsMVVMView(error: URLError.networkConnectionLostError)
                         .navigationTitle("Error Actions")
                 }
-                NavigationLink("ErrorPresentationView") {
+                NavigationLink {
                     ErrorPresentationViewWithErrorActionsView(error: URLError.networkConnectionLostError)
                         .navigationTitle("Error Actions")
+                } label: {
+                    Text(verbatim: "ErrorPresentationView")
                 }
-                NavigationLink("ErrorPresentationView (MVVM)") {
+                NavigationLink {
                     ErrorPresentationViewWithErrorActionsMVVMView(error: URLError.networkConnectionLostError)
                         .navigationTitle("Error Actions")
+                } label: {
+                    Text(verbatim: "ErrorPresentationView (MVVM)")
                 }
             }
         } header: {
@@ -106,13 +114,17 @@ struct DemosNavigationView: View {
                     AlertWithErrorActionsMVVMView(error: FrobnicateError.random())
                         .navigationTitle("Custom Presentation")
                 }
-                NavigationLink("ErrorPresentationView") {
+                NavigationLink {
                     ErrorPresentationViewWithErrorActionsView(error: FrobnicateError.random())
                         .navigationTitle("Custom Presentation")
+                } label: {
+                    Text(verbatim: "ErrorPresentationView")
                 }
-                NavigationLink("ErrorPresentationView (MVVM)") {
+                NavigationLink {
                     ErrorPresentationViewWithErrorActionsMVVMView(error: FrobnicateError.random())
                         .navigationTitle("Custom Presentation")
+                } label: {
+                    Text(verbatim: "ErrorPresentationView (MVVM)")
                 }
             }
         } header: {
@@ -145,17 +157,21 @@ struct DemosNavigationView: View {
                         failureProbability: 1)
                     .navigationTitle("Ignored Error")
                 }
-                NavigationLink("ErrorPresentationView") {
+                NavigationLink {
                     ErrorPresentationViewWithErrorActionsView(
                         error: CocoaError(.userCancelled),
                         failureProbability: 1)
                     .navigationTitle("Ignored Error")
+                } label: {
+                    Text(verbatim: "ErrorPresentationView")
                 }
-                NavigationLink("ErrorPresentationView (MVVM)") {
+                NavigationLink {
                     ErrorPresentationViewWithErrorActionsMVVMView(
                         error: CocoaError(.userCancelled),
                         failureProbability: 1)
                     .navigationTitle("Ignored Error")
+                } label: {
+                    Text(verbatim: "ErrorPresentationView (MVVM)")
                 }
             }
         } header: {

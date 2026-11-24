@@ -35,7 +35,7 @@ import SwiftUI
                         self.needsDismiss = true
                     }
                 }
-                .onRetry(pickEmoji)
+                .onRetry(action: pickEmoji)
         }
     }
 }
@@ -64,7 +64,7 @@ struct ErrorPresentationViewWithErrorActionsMVVMView: View {
     var body: some View {
         Group {
             if let errorPresentation {
-                ErrorPresentationView(errorPresentation, cancelActionVisible: true)
+                ErrorPresentationView(errorPresentation, cancelButton: .visible)
             } else {
                 VStack {
                     EmojiView(emoji: viewModel.emoji)

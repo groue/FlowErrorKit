@@ -66,7 +66,7 @@ struct ConflictingErrorPresentationsView: View {
             Divider()
             
             if let errorPresentation {
-                ErrorPresentationView(errorPresentation, cancelActionVisible: true, footer: {
+                ErrorPresentationView(errorPresentation, cancelButton: .visible, footer: {
                     errorButtons()
                 })
             } else {
@@ -79,8 +79,8 @@ struct ConflictingErrorPresentationsView: View {
         }
         .handleError(ofType: CountedError.self) { flowError, err in
             return .present(ErrorPresentation(
-                title: "\(err)",
-                flowError: flowError))
+                flowError: flowError,
+                verbatimTitle: "\(err)"))
         }
     }
     

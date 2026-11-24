@@ -38,8 +38,8 @@ struct CodeSigningErrorHandler: FlowErrorHandler {
         }
         
         return .present(ErrorPresentation(
-            title: error.errorDescription,
-            flowError: flowError.appendingAction("Create Development Team") { }))
+            flowError: flowError.appendingAction("Create Development Team") { },
+            title: error.errorDescription))
     }
 }
 
@@ -60,13 +60,12 @@ struct PermissionErrorHandler: FlowErrorHandler {
         }
         
         return .present(ErrorPresentation(
-            title: error.errorDescription,
-            message: nil,
             flowError: flowError
                 .droppingRetryAction()
                 .appendingAction("Open Settings") {
                     UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!)
-                }))
+                },
+            title: error.errorDescription))
     }
 }
 
@@ -77,7 +76,7 @@ struct VerbatimErrorHandler: FlowErrorHandler {
         }
         
         let title = error.errorDescription
-        let errorPresentation = ErrorPresentation(title: title, flowError: flowError)
+        let errorPresentation = ErrorPresentation(flowError: flowError, title: title)
         return .present(errorPresentation)
     }
 }

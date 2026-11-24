@@ -2,7 +2,7 @@
 
 A general description of the library usage
 
-## Error handling in three steps
+## Overview
 
 Error handling with FlowErrorKit is performed in three steps:
 
@@ -142,11 +142,11 @@ There are other error presentation options, such as displaying an ``ErrorPresent
 
 ### Install flow error handlers for specific error handling
 
-The library comes with a default chain of error handlers (see ``FlowErrorHandlerChain/default``) that handles `CancellationError`, `CocoaError`, and `URLError`. Errors that are not handled by any error handler are presented with a generic, redacted, title. In the Debug configuration, the message displays the error, so that developers can see what went wrong.
+The library comes with a default chain of error handlers (see ``FlowErrorHandlerChain/default``) that handles `CancellationError`, `CocoaError`, and `URLError`. Errors that are not handled by any error handler are presented with a generic, redacted, title. In the Debug configuration, the built-in presentations (alerts and ``ErrorPresentationView``) also display the raw error, so that developers can see what went wrong.
 
-Below is a screenshot from the demo app that shows the default presentation of an unhandled error when the library is compiled in the Debug configuration:
+Below is a screenshot from the test app that shows the default presentation of an unhandled error when the library is compiled in the Debug configuration:
 
-@Image(source: "DefaultErrorHandlerDEBUG.png", alt: "A screenshot from the demo app that shows a standard alert. The title is \"An Error Occurred\". The message displays the error domain NSURLErrorDomain, the error code -1005, and the localized description. The alert has one OK button.")
+@Image(source: "DefaultErrorHandlerDEBUG.png", alt: "A screenshot from the test app that shows a standard alert. The title is \"An Error Occurred\". The message is \"DEBUG: ServerError(statusCode: 500)\", the raw description of the unhandled error. The alert has one OK button.")
 
 Custom error handlers can alter the default behavior, and choose if and how an error should be presented. They conform to the ``FlowErrorHandler`` protocol, and must be registered in the SwiftUI environment with FlowErrorKit APIs. Once registered in the SwiftUI environment, an error handler can handle all errors caught in the SwiftUI view hierarchy.
 
@@ -186,16 +186,16 @@ struct CLErrorHandler: FlowErrorHandler {
             // let the user grant the required permissions.
             let presentedFlowError = flowError
                 .droppingRetryAction()
-                .appendingAction(String(localized: "Open Settings")) {
+                .appendingAction("Open Settings") {
                     if let url = URL(string: UIApplication.openSettingsURLString) {
                         UIApplication.shared.open(url)
                     }
                 }
             
             return .present(ErrorPresentation(
-                title: String(localized: "Permission Required"),
-                message: String(localized: "Please grant access to your location in the Settings application."),
-                flowError: presentedFlowError))
+                flowError: presentedFlowError,
+                title: "Permission Required")
+                .withMessage("Please grant access to your location in the Settings application."))
             
         case CLError.geocodeCanceled:
             // Don't present this error
@@ -203,8 +203,8 @@ struct CLErrorHandler: FlowErrorHandler {
             
         default:
             return .present(ErrorPresentation(
-                message: error.localizedDescription,
-                flowError: flowError))
+                flowError: flowError,
+                message: error.localizedDescription))
         }
     }
 }

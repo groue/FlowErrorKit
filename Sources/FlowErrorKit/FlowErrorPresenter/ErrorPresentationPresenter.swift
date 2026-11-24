@@ -37,9 +37,9 @@ struct ErrorPresentationModifier: ViewModifier {
                     self.flowError = nil
                 }
             }
-        } else if let errorPresentation {
-            // Flow error programmatically cancelled.
-            errorPresentation.flowError.discard(.presentationCancelled)
+        } else if errorPresentation != nil {
+            // Flow error programmatically dismissed: remove the presentation
+            // without performing any action.
             self.errorPresentation = nil
         }
     }
@@ -95,7 +95,7 @@ private struct MyView: View {
         } catch {
             // Turn the error into a FlowError
             flowError = FlowError(error: error)
-                .onRetry(performFailableAction)
+                .onRetry(action: performFailableAction)
         }
     }
 }

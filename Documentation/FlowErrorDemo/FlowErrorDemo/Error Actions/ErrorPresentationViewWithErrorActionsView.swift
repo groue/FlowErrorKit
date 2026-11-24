@@ -28,7 +28,7 @@ struct ErrorPresentationViewWithErrorActionsView: View {
     var body: some View {
         Group {
             if let errorPresentation {
-                ErrorPresentationView(errorPresentation, cancelActionVisible: true)
+                ErrorPresentationView(errorPresentation, cancelButton: .visible)
             } else {
                 VStack {
                     EmojiView(emoji: emoji)
@@ -66,7 +66,7 @@ struct ErrorPresentationViewWithErrorActionsView: View {
                         dismiss()
                     }
                 }
-                .onRetry(pickEmoji)
+                .onRetry(action: pickEmoji)
         }
     }
 }

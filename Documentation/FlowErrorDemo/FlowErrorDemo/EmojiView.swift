@@ -6,7 +6,7 @@ struct EmojiView: View {
     @State private var animatedEmoji: String?
     
     var body: some View {
-        Text(text)
+        content
             .font(.system(size: 60))
             .foregroundStyle(animatedEmoji == nil ? .quaternary : .primary)
             .id(animatedEmoji)
@@ -19,11 +19,12 @@ struct EmojiView: View {
             }
     }
     
-    var text: LocalizedStringKey {
+    @ViewBuilder
+    var content: some View {
         if let animatedEmoji {
-            return "\(animatedEmoji)"
+            Text(animatedEmoji)
         } else {
-            return "\(Image(systemName: "circle.dashed"))"
+            Image(systemName: "circle.dashed")
         }
     }
 }

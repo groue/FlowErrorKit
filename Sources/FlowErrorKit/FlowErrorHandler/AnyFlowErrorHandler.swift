@@ -11,9 +11,9 @@ public struct AnyFlowErrorHandler {
     }
     
     /// Creates a handler whose `handle(_:)` method forwards to
-    /// `handleError`.
-    public init(handleError: @escaping @MainActor (FlowError) -> FlowErrorHandling) {
-        _handle = handleError
+    /// `handle`.
+    public init(_ handle: @escaping @MainActor (FlowError) -> FlowErrorHandling) {
+        _handle = handle
     }
 }
 

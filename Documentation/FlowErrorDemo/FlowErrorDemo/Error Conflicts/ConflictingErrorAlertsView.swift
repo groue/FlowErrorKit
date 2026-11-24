@@ -29,9 +29,9 @@ struct ConflictingErrorAlertsView: View {
                     errorButtons()
                     
                     if let flowError {
-                        Text("flowError: \(String(describing: flowError.error))")
+                        Text(verbatim: "flowError: \(String(describing: flowError.error))")
                     } else {
-                        Text("flowError: nil")
+                        Text(verbatim: "flowError: nil")
                     }
                 }
                 .buttonStyle(.bordered)
@@ -61,8 +61,8 @@ struct ConflictingErrorAlertsView: View {
         }
         .handleError(ofType: CountedError.self) { flowError, err in
             return .present(ErrorPresentation(
-                title: "\(err)",
-                flowError: flowError))
+                flowError: flowError,
+                verbatimTitle: "\(err)"))
         }
     }
     

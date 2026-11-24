@@ -5,6 +5,9 @@ import SwiftUI
 
 /// A view that conveys an error state.
 ///
+/// In the DEBUG configuration, the view also describes the presented
+/// error.
+///
 /// - Tip: In some scenarios, you might need to create a `FlowError`
 /// with the `allowMultipleActionExecutions` flag, or the user might not
 /// be able to select an action multiple times from the error
@@ -35,33 +38,43 @@ public struct ErrorPresentationView<Footer: View>: View {
     /// Creates a view that displays an error presentation.
     ///
     /// - parameter errorPresentation: An error presentation.
-    /// - parameter cancelActionVisible: Whether the cancel action should
-    ///   be visible.
+    /// - parameter cancelButton: The visibility of the button that
+    ///   performs the cancel action. The default `.automatic` hides the
+    ///   button, like `.hidden`. Use `.visible` to show it.
     /// - parameter footer: A view to display below error actions.
     public init(
         _ errorPresentation: ErrorPresentation,
-        cancelActionVisible: Bool = false,
+        cancelButton: Visibility = .automatic,
         @ViewBuilder footer: (() -> Footer) = { EmptyView() })
     {
         self.source = .errorPresentation(errorPresentation)
-        self.cancelActionVisible = cancelActionVisible
+        self.cancelActionVisible = cancelButton == .visible
         self.footer = footer()
     }
     
     /// Creates a view that handles a flow error and displays an error
     /// presentation.
     ///
+    /// The flow error is handled by the chain of flow error handlers
+    /// registered in the SwiftUI environment (see
+    /// ``SwiftUICore/EnvironmentValues/errorHandler``).
+    ///
+    /// The view always displays the flow error. If a flow error handler
+    /// returns ``FlowErrorHandling/cancel``, the view displays a default
+    /// presentation, and the cancel action of the flow error is not run.
+    ///
     /// - parameter flowError: A flow error.
-    /// - parameter cancelActionVisible: Whether the cancel action should
-    ///   be visible.
+    /// - parameter cancelButton: The visibility of the button that
+    ///   performs the cancel action. The default `.automatic` hides the
+    ///   button, like `.hidden`. Use `.visible` to show it.
     /// - parameter footer: A view to display below error actions.
     public init(
         _ flowError: FlowError,
-        cancelActionVisible: Bool = false,
+        cancelButton: Visibility = .automatic,
         @ViewBuilder footer: (() -> Footer) = { EmptyView() })
     {
         self.source = .flowError(flowError)
-        self.cancelActionVisible = cancelActionVisible
+        self.cancelActionVisible = cancelButton == .visible
         self.footer = footer()
     }
     
@@ -125,21 +138,19 @@ extension ContentUnavailableView {
 
 // MARK: - ErrorPresentationContent
 
-/// A structure that represents the body of an error view.
-///
-/// You don’t create this type directly. FlowErrorKit creates it when you
-/// build an ``ErrorPresentationView``, or an error `ContentUnavailableView`.
+/// The label, description, and actions of the `ContentUnavailableView`
+/// displayed by ``ErrorPresentationView``.
 @MainActor
 struct ErrorPresentationContent<Footer: View> {
     var errorPresentation: ErrorPresentation
     var cancelActionVisible: Bool
     var footer: Footer
     
-    public struct Label: View {
-        var title: String
+    struct Label: View {
+        var title: TextSource
         var systemImage: String
         
-        public var body: some View {
+        var body: some View {
             SwiftUI.Label {
                 Text(title)
             } icon: {
@@ -148,22 +159,34 @@ struct ErrorPresentationContent<Footer: View> {
         }
     }
     
-    public struct Description: View {
-        var message: String?
+    struct Description: View {
+        var subtitle: TextSource?
+        var message: TextSource?
+        var error: any Error
+        @ScaledMetric private var spacing = 2
         
-        public var body: some View {
-            if let message {
-                Text(message)
+        var body: some View {
+            VStack(spacing: spacing) {
+                if let subtitle {
+                    Text(subtitle)
+                        .fontWeight(.semibold)
+                }
+                if let message {
+                    Text(message)
+                }
+#if DEBUG
+                Text(verbatim: "DEBUG: \(error)")
+#endif
             }
         }
     }
     
-    public struct Actions: View {
+    struct Actions: View {
         var flowError: FlowError
         var cancelActionVisible: Bool
         var footer: Footer
         
-        public var body: some View {
+        var body: some View {
             ForEach(flowError.supplementaryActions) { action in
                 supplementaryActionButton(action)
             }
@@ -186,31 +209,37 @@ struct ErrorPresentationContent<Footer: View> {
         }
         
         func supplementaryActionButton(_ action: ErrorAction) -> some View {
-            Button(action.title, role: action.role.map(ButtonRole.init(role:))) {
+            Button(role: action.role.map(ButtonRole.init)) {
                 flowError.performAction(action)
+            } label: {
+                Text(action.title)
             }
         }
         
         func retryButton(_ action: ErrorAction) -> some View {
-            Button(action.title, role: action.role.map(ButtonRole.init(role:))) {
+            Button(role: action.role.map(ButtonRole.init)) {
                 flowError.performAction(action)
+            } label: {
+                Text(action.title)
             }
         }
         
         func cancelButton() -> some View {
-            Button(cancelTitle, role: .cancel) {
+            Button(role: .cancel) {
                 flowError.performCancelAction()
+            } label: {
+                Text(cancelTitle)
             }
         }
         
-        var cancelTitle: String {
+        var cancelTitle: TextSource {
             if let cancelTitle = flowError.cancelTitle {
                 return cancelTitle
             } else if flowError.retryAction == nil && flowError.supplementaryActions.isEmpty {
                 // Only possible action is cancel.
-                return String(localized: .ok, bundle: .module)
+                return .localizedStringResource(.ok)
             } else {
-                return String(localized: .cancel, bundle: .module)
+                return .localizedStringResource(.cancel)
             }
         }
     }
@@ -222,7 +251,10 @@ struct ErrorPresentationContent<Footer: View> {
     }
     
     func description() -> Self.Description {
-        Description(message: errorPresentation.message)
+        Description(
+            subtitle: errorPresentation.subtitle,
+            message: errorPresentation.message,
+            error: errorPresentation.flowError.error)
     }
     
     func actions() -> Self.Actions {
@@ -241,31 +273,36 @@ struct PreviewError: Error { }
     VStack {
         ErrorPresentationView(
             ErrorPresentation(
-                title: "An Error Occurred",
-                flowError: FlowError(error: PreviewError())
-            )
-        )
+                flowError: FlowError(error: PreviewError()),
+                verbatimTitle: "An Error Occurred"))
         
         Divider()
         
         ErrorPresentationView(
             ErrorPresentation(
-                title: "Not connected to Internet",
-                systemImage: "wifi.exclamationmark",
-                flowError: FlowError(error: PreviewError())
-            )
-        )
+                flowError: FlowError(error: PreviewError()),
+                verbatimTitle: "Not connected to Internet",
+                systemImage: "wifi.exclamationmark"))
     }
+}
+
+#Preview("Subtitle") {
+    // The flow error title wins, and the presentation title becomes
+    // the subtitle.
+    ErrorPresentationView(
+        ErrorPresentation(
+            flowError: FlowError(error: PreviewError()).withTitle(verbatim: "Could not frobnicate"),
+            verbatimTitle: "Not connected to Internet",
+            message: "Please check your connection.",
+            systemImage: "wifi.exclamationmark"))
 }
 
 #Preview("Retry ErrorPresentation") {
     ErrorPresentationView(
         ErrorPresentation(
-            title: "An Error Occurred",
-            message: "Could not frobnicate the fubar.",
-            flowError: FlowError(error: PreviewError()).onRetry { }
-        )
-    )
+            flowError: FlowError(error: PreviewError()).onRetry { },
+            verbatimTitle: "An Error Occurred",
+            message: "Could not frobnicate the fubar."))
 }
 
 #Preview("Retry FlowError") {
@@ -276,38 +313,32 @@ struct PreviewError: Error { }
 #Preview("Visible Cancel Action") {
     ErrorPresentationView(
         ErrorPresentation(
-            title: "An Error Occurred",
-            message: "Could not frobnicate the fubar.",
-            flowError: FlowError(error: PreviewError()).onRetry { }
-        ),
-        cancelActionVisible: true
-    )
+            flowError: FlowError(error: PreviewError()).onRetry { },
+            verbatimTitle: "An Error Occurred",
+            message: "Could not frobnicate the fubar."),
+        cancelButton: .visible)
 }
 
 #Preview("Custom Actions") {
     ErrorPresentationView(
         ErrorPresentation(
-            title: "An Error Occurred",
-            message: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
             flowError: FlowError(error: PreviewError())
                 .onRetry { }
                 .appendingAction("Quit") { }
-                .appendingAction("Repair") { }
-        )
-    )
+                .appendingAction("Repair") { },
+            verbatimTitle: "An Error Occurred",
+            message: "Lorem ipsum dolor sit amet, consectetur adipiscing elit."))
 }
 
 #Preview("Footer") {
     ErrorPresentationView(
         ErrorPresentation(
-            title: "An Error Occurred",
-            message: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-            flowError: FlowError(error: PreviewError()).onRetry { }
-        ),
+            flowError: FlowError(error: PreviewError()).onRetry { },
+            verbatimTitle: "An Error Occurred",
+            message: "Lorem ipsum dolor sit amet, consectetur adipiscing elit."),
         footer: {
             ProgressView()
-        }
-    )
+        })
     .disabled(true)
 }
 #endif

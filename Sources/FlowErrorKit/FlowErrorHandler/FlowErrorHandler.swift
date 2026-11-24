@@ -50,8 +50,8 @@
     ///             // The localized message must be shown so that the developer
     ///             // understands what's wrong.
     ///             return .present(ErrorPresentation(
-    ///                 title: error.localizedDescription,
-    ///                 flowError: flowError.droppingRetryAction()))
+    ///                 flowError: flowError.droppingRetryAction(),
+    ///                 title: error.localizedDescription))
     ///
     ///         default:
     ///             // Present a generic redacted error, because most CocoaErrors
@@ -84,16 +84,16 @@
     ///             // let the user grant the required permissions.
     ///             let presentedFlowError = flowError
     ///                 .droppingRetryAction()
-    ///                 .appendingAction(String(localized: "Open Settings")) {
+    ///                 .appendingAction("Open Settings") {
     ///                     if let url = URL(string: UIApplication.openSettingsURLString) {
     ///                         UIApplication.shared.open(url)
     ///                     }
     ///                 }
     ///
     ///             return .present(ErrorPresentation(
-    ///                 title: String(localized: "Permission Required"),
-    ///                 message: String(localized: "Please grant access to your location in the Settings application."),
-    ///                 flowError: presentedFlowError))
+    ///                 flowError: presentedFlowError,
+    ///                 title: "Permission Required")
+    ///                 .withMessage("Please grant access to your location in the Settings application."))
     ///
     ///         case CLError.geocodeCanceled:
     ///             // Don't present this error
@@ -101,8 +101,8 @@
     ///
     ///         default:
     ///             return .present(ErrorPresentation(
-    ///                 message: error.localizedDescription,
-    ///                 flowError: flowError))
+    ///                 flowError: flowError,
+    ///                 message: error.localizedDescription))
     ///         }
     ///     }
     /// }

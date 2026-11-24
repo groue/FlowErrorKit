@@ -65,8 +65,8 @@ extension View {
     ///         if flowError.error is MyError {
     ///             // Specific handling for MyError
     ///             return .present(ErrorPresentation(
-    ///                 title: "My Error Occurred",
-    ///                 flowError: flowError))
+    ///                 flowError: flowError,
+    ///                 title: "My Error Occurred"))
     ///         } else {
     ///             // Not MyError: pass to the next error handler.
     ///             return .pass(flowError)
@@ -104,8 +104,8 @@ extension View {
     ///                 if flowError.error is MyError {
     ///                     // Specific handling for MyError
     ///                     return .present(ErrorPresentation(
-    ///                         title: "My Error Occurred",
-    ///                         flowError: flowError))
+    ///                         flowError: flowError,
+    ///                         title: "My Error Occurred"))
     ///                 } else {
     ///                     // Not MyError: pass to the next error handler.
     ///                     return .pass(flowError)
@@ -124,7 +124,7 @@ extension View {
     public func handleError(
         handling: @escaping @MainActor (FlowError) -> FlowErrorHandling
     ) -> some View {
-        self.handleError(with: AnyFlowErrorHandler(handleError: handling))
+        self.handleError(with: AnyFlowErrorHandler(handling))
     }
     
     /// Registers a closure that handles flow errors of type `Err`.
@@ -140,8 +140,8 @@ extension View {
     ///             .handleError(ofType: MyError.self) { flowError, _ in
     ///                 // Specific handling for MyError
     ///                 return .present(ErrorPresentation(
-    ///                     title: "My Error Occurred",
-    ///                     flowError: flowError))
+    ///                     flowError: flowError,
+    ///                     title: "My Error Occurred"))
     ///             }
     ///     }
     /// }

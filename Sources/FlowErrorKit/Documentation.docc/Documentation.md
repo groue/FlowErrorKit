@@ -40,6 +40,7 @@ Presenting a flow error means displaying the error in SwiftUI views.
 - ``ErrorPresentation``
 - ``ErrorPresentationView``
 - ``FlowErrorPresenter``
+- ``TextSource``
 
 ### SwiftUI Environment
 

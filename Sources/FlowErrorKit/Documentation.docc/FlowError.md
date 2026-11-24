@@ -74,8 +74,11 @@ As long as the flow error is presented by the SwiftUI view, it is guaranteed tha
 - If a view wants to present a new flow error while a previous one is still presented on screen, the outcome depends on the presentation:
     - With an alert (`.presentError($flowError, with: .alert)`), the new error is not presented, and its cancel action is run.
     - With an error presentation binding (`.presentError($flowError, with: $errorPresentation)`), the new error replaces the previous one, and the cancel action of the previous one is run.
+- If the view that presents the error disappears, the outcome depends on the presentation:
+    - With an alert, the alert is removed, the flow error binding is set to nil, and the cancel action is run.
+    - With an error presentation binding, nothing happens: the error presentation remains in the binding, and the application remains responsible for displaying it, and for removing it from the screen.
 
-There are two exceptions:
+There are three exceptions:
 
 - When a flow error is programmatically dismissed, no error action is run. If needed, the cancel action can be performed explicitly, as below:
 
@@ -94,6 +97,8 @@ There are two exceptions:
         }
     }
     ```
+
+- When an ``ErrorPresentationView`` is created from a flow error, and a ``FlowErrorHandler`` cancels the error presentation, the view still displays the error with a default presentation, and the cancel action is not run. Indeed, the view can not hide itself: it is the responsibility of the application to remove it from the screen.
 
 - ⚠️ When SwiftUI prevents the error presentation (because an unexpected alert or sheet is already presented), no error action is run. This is a known issue, and a future version of `FlowErrorKit` should address it.
 
@@ -120,15 +125,28 @@ There are two exceptions:
 
 ### Transforming flow errors
 
-- ``onCancel(_:_:)``
-- ``onRetry(_:)``
-- ``onRetry(_:_:)``
+- ``onCancel(action:)``
+- ``onCancel(_:action:)-(LocalizedStringKey,_)``
+- ``onCancel(_:action:)-(LocalizedStringResource,_)``
+- ``onCancel(_:action:)-(StringProtocol,_)``
+- ``onCancel(verbatim:action:)``
+- ``onRetry(action:)``
+- ``onRetry(_:action:)-(LocalizedStringKey,_)``
+- ``onRetry(_:action:)-(LocalizedStringResource,_)``
+- ``onRetry(_:action:)-(StringProtocol,_)``
+- ``onRetry(verbatim:action:)``
 - ``appendingAction(_:)``
-- ``appendingAction(_:role:perform:)``
+- ``appendingAction(_:role:action:)-(LocalizedStringKey,_,_)``
+- ``appendingAction(_:role:action:)-(LocalizedStringResource,_,_)``
+- ``appendingAction(_:role:action:)-(StringProtocol,_,_)``
+- ``appendingAction(verbatim:role:action:)``
 - ``droppingRetryAction()``
-- ``finally(_:)``
+- ``finally(action:)``
 - ``withError(_:)``
-- ``withTitle(_:)``
+- ``withTitle(_:)-(LocalizedStringKey)``
+- ``withTitle(_:)-(LocalizedStringResource)``
+- ``withTitle(_:)-(StringProtocol)``
+- ``withTitle(verbatim:)``
 
 ### Supporting Types
 

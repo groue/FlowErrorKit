@@ -15,8 +15,8 @@ struct MyErrorHandler: FlowErrorHandler {
         if flowError.error is MyError {
             // Specific handling for MyError
             return .present(ErrorPresentation(
-                title: "My Error Occurred",
-                flowError: flowError))
+                flowError: flowError,
+                title: "My Error Occurred"))
         } else {
             // Not MyError: pass to the next error handler.
             return .pass(flowError)
@@ -36,7 +36,7 @@ struct MyView: View {
 }
 ```
 
-## The Chain of Flow Error Handlers
+### The Chain of Flow Error Handlers
 
 As multiple error handlers enter the SwiftUI environment, they build a **chain of error handlers**.
 
@@ -85,7 +85,7 @@ struct MyView: View {
 }
 ```
 
-## Observable Objects as FlowError Handlers
+### Observable Objects as FlowError Handlers
 
 When an observable object conforms to `FlowErrorHandler`, it can update its inner state for particular flow errors:
 

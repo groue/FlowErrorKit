@@ -24,3 +24,12 @@ struct ExpiredSessionError: Error { }
 struct VerbatimError: LocalizedError {
     var errorDescription: String
 }
+
+/// An error that no error handler handles.
+struct ServerError: LocalizedError {
+    var statusCode: Int
+    
+    var errorDescription: String? {
+        "The server responded with status code \(statusCode)."
+    }
+}

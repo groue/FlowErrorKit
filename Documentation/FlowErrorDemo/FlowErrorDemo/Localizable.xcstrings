@@ -1,0 +1,424 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "`ErrorPresentationView` can lead the user to select an action multiple times. In this demo, you can hit the \"Open Settings\" button multiple times. Notice how a runtime warning %@ is triggered when you hit this button more than once. The warning suggests that we use the `allowMultipleActionExecutions` flag when creating the `FlowError`." : {
+
+    },
+    "Add a Retry button if desired, and execute custom code when the user cancels the error." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajouter un bouton Réessayer si désiré, et définissez le code à exécuter dans l’utilisateur annulle l’erreur."
+          }
+        }
+      }
+    },
+    "Alert" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alerte"
+          }
+        }
+      }
+    },
+    "Alert (MVVM)" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alerte (MVVM)"
+          }
+        }
+      }
+    },
+    "Can you guess which error is thrown?" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pouvez-vous deviner quelle erreur est lancée ?"
+          }
+        }
+      }
+    },
+    "Clear log" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effacer le log"
+          }
+        }
+      }
+    },
+    "Copied!" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copié !"
+          }
+        }
+      }
+    },
+    "Copy Path" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copier le chemin"
+          }
+        }
+      }
+    },
+    "Custom Presentation" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Présentation personnalisée"
+          }
+        }
+      }
+    },
+    "Discard error" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer l’erreur"
+          }
+        }
+      }
+    },
+    "Discard error in 3s" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer l’erreur dans 3s"
+          }
+        }
+      }
+    },
+    "Error Actions" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actions"
+          }
+        }
+      }
+    },
+    "Error Basics" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erreurs : Notions de base"
+          }
+        }
+      }
+    },
+    "Error Presentation Basics" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Présentation des erreurs : Notions de base"
+          }
+        }
+      }
+    },
+    "Failure probability: %@" : {
+
+    },
+    "FlowError Demo" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FlowError Démo"
+          }
+        }
+      }
+    },
+    "flowError: %@" : {
+
+    },
+    "flowError: none" : {
+
+    },
+    "Ignored Error" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erreur ignorée"
+          }
+        }
+      }
+    },
+    "Ignored Errors" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erreurs ignorées"
+          }
+        }
+      }
+    },
+    "Multiple Actions" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actions multiples"
+          }
+        }
+      }
+    },
+    "Multiple Actions Warning" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avertissement sur actions multiples"
+          }
+        }
+      }
+    },
+    "No setup required: just catch and present errors with an alert or an ErrorPresentationView." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune configuration n’est nécessaire : présentez les erreurs avec une alerte ou une ErrorPresentationView."
+          }
+        }
+      }
+    },
+    "Open Settings" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir les réglages"
+          }
+        }
+      }
+    },
+    "Permission Required" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permission requise"
+          }
+        }
+      }
+    },
+    "Pick an Emoji" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisissez un emoji"
+          }
+        }
+      }
+    },
+    "Please grant access to your location in the Settings application." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veuillez donner votre autorisation dans l’application Réglages."
+          }
+        }
+      }
+    },
+    "Random Error" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erreur aléatoire"
+          }
+        }
+      }
+    },
+    "Random Errors" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erreurs aléatoires"
+          }
+        }
+      }
+    },
+    "Sign in" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se connecter"
+          }
+        }
+      }
+    },
+    "Some errors need specific recovery actions. `CLError(.denied)`, handled by `CLErrorHandler`, has an extra \"Open Settings\" action." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certaines erreurs requièrent des actions spécifiques pour être corrigées. `CLError(.denied)`, gérée par `CLErrorHandler`, a une action supplémentaire « Ouvrir les réglages »."
+          }
+        }
+      }
+    },
+    "Some errors represent user cancellation, and must not be presented. This is the case for `CocoaError(.userCancelled)`, handled by `CocoaErrorHandler`." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certaines erreurs représentent une annulation déclenchée par l’utilisateur, et ne doivent pas être présentées. C’est le cas de `CocoaError(.userCancelled)`, gérée par `CocoaErrorHandler`."
+          }
+        }
+      }
+    },
+    "Some errors require a custom presentation. `FrobnicateError`, handled by `FrobnicateErrorHandler`, has a custom title and message, and no Retry button when the error is unrecoverable." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Certaines erreurs requièrent une présentation personnalisée. `FrobnicateError`, gérée par`FrobnicateErrorHandler`, a un titre et message personnalisé, et n’a pas de bouton « Réessayer » quand l’erreur ne peut pas être corrigée."
+          }
+        }
+      }
+    },
+    "Supplementary Action" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Action supplémentaire"
+          }
+        }
+      }
+    },
+    "Supplementary Actions" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actions supplémentaires"
+          }
+        }
+      }
+    },
+    "The `UnauthorizedError` is handled by destroying the whole view when it happens." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’erreur `UnauthorizedError` est gérée par la destruction de la vue où elle survient."
+          }
+        }
+      }
+    },
+    "There should be as many ➡️ as ⬅️ after errors have been handled by the user, unless an error is discarded, in which case no action is executed and there is no ⬅️." : {
+
+    },
+    "This demo application reviews frequent use cases of error handling." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette application de démo passe en revue des cas d’utilisation fréquents dans la gestion des erreurs."
+          }
+        }
+      }
+    },
+    "Throw CountedError" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lancer CountedError"
+          }
+        }
+      }
+    },
+    "Throw CountedError in 3s" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lancer CountedError dans 3s"
+          }
+        }
+      }
+    },
+    "Throw IgnoredError" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lancer IgnoredError"
+          }
+        }
+      }
+    },
+    "Throw IgnoredError in 3s" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lancer IgnoredError dans 3s"
+          }
+        }
+      }
+    },
+    "Unauthorized Error" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erreur d’autorisation"
+          }
+        }
+      }
+    },
+    "Unauthorized Error (MVVM)" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erreur d’autorisation (MVVM)"
+          }
+        }
+      }
+    },
+    "Unauthorized Errors" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erreurs d’autorisation"
+          }
+        }
+      }
+    },
+    "You have been signed out." : {
+
+    }
+  },
+  "version" : "1.3"
+}

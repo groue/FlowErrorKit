@@ -1,5 +1,6 @@
 import Foundation
 import IssueReporting
+import SwiftUI
 import Synchronization
 
 // See documentation in FlowError.md.
@@ -85,9 +86,21 @@ import Synchronization
         }
     }
     
-    private struct CancelAction {
-        var title: String?
-        var perform: @MainActor (ErrorCancelReason) -> Void
+    @MainActor private struct CancelAction {
+        var title: TextSource?
+        private var action: @MainActor (ErrorCancelReason) -> Void
+        
+        init(
+            title: TextSource?,
+            action: @escaping @MainActor (ErrorCancelReason) -> Void
+        ) {
+            self.title = title
+            self.action = action
+        }
+        
+        func callAsFunction(_ reason: ErrorCancelReason) {
+            action(reason)
+        }
     }
     
     /// The identifier of the `FlowError` identifies the creation of the
@@ -102,8 +115,8 @@ import Synchronization
     /// let flowError = FlowError(error: error)
     /// let other = FlowError(error: otherError)
     /// let derived = flowError.onRetry { ... }
-    /// flowError.id = other.id   // false
-    /// flowError.id = derived.id // true
+    /// flowError.id == other.id   // false
+    /// flowError.id == derived.id // true
     /// ```
     nonisolated public var id: ObjectIdentifier {
         ObjectIdentifier(executionToken)
@@ -114,25 +127,28 @@ import Synchronization
     
     /// A customized error title.
     ///
-    /// To set to title, use ``withTitle(_:)``.
-    public private(set) var title: String?
+    /// To set the title, use ``withTitle(_:)-(LocalizedStringKey)``.
+    public private(set) var title: TextSource?
     
     /// The optional cancel action.
     ///
-    /// To set the cancel action, use ``onCancel(_:_:)``.
+    /// To set the cancel action, use ``onCancel(action:)``.
     ///
     /// To execute the cancel action, see ``performCancelAction()``
     /// and ``discard(_:)``.
     private var cancelAction: CancelAction?
     
     /// The customized title for buttons that perform the cancel action.
-    public var cancelTitle: String? {
+    ///
+    /// To set the cancel title, use
+    /// ``onCancel(_:action:)-(LocalizedStringKey,_)``.
+    public var cancelTitle: TextSource? {
         cancelAction?.title
     }
     
     /// The optional retry action, for recoverable errors.
     ///
-    /// To set the retry action, use ``onRetry(_:)``.
+    /// To set the retry action, use ``onRetry(action:)``.
     ///
     /// To execute the retry action, use ``performAction(_:)``.
     ///
@@ -142,7 +158,7 @@ import Synchronization
     
     /// The supplementary actions.
     ///
-    /// To add supplementary actions, use ``appendingAction(_:role:perform:)``.
+    /// To add supplementary actions, use ``appendingAction(_:role:action:)-(LocalizedStringKey,_,_)``.
     ///
     /// To execute those actions, use ``performAction(_:)``.
     public private(set) var supplementaryActions: [ErrorAction]
@@ -191,7 +207,7 @@ import Synchronization
     ///             // Turn the error into a FlowError
     ///             flowError = FlowError(error: error)
     ///                 .onCancel { ... }
-    ///                 .onRetry(performSomeAction)
+    ///                 .onRetry(action: performSomeAction)
     ///         }
     ///     }
     /// }
@@ -249,9 +265,9 @@ extension FlowError {
         executionToken.execute {
             if action.id != retryAction?.id {
                 // We're executing a supplementary action.
-                cancelAction?.perform(.supplementaryActionPerformed)
+                cancelAction?(.supplementaryActionPerformed)
             }
-            action.perform()
+            action()
             finally?()
         }
     }
@@ -268,7 +284,7 @@ extension FlowError {
     /// ``discard(_:)`` method.
     public func performCancelAction() {
         executionToken.execute {
-            cancelAction?.perform(.userCancelled)
+            cancelAction?(.userCancelled)
             finally?()
         }
     }
@@ -285,7 +301,7 @@ extension FlowError {
     @discardableResult
     public func discard(_ reason: ErrorCancelReason) -> Bool {
         executionToken.executeUnlessExecuted {
-            cancelAction?.perform(reason)
+            cancelAction?(reason)
             finally?()
         }
     }
@@ -298,40 +314,119 @@ extension FlowError {
     // cancellation handler. No `FlowError` method should remove it:
     //
     // - Do not define a `droppingCancelAction()` method.
-    // - Don't turn the `cancelAction` property into a mutable one.
-    // - Keep `FlowError` immutable. It is a class, but it has value semantics.
+    // - Don't make the `cancelAction` property publicly settable.
     // - Etc.
+    
+    func onCancel(
+        titleSource: TextSource? = nil,
+        action: @escaping @MainActor (_ cancelReason: ErrorCancelReason) -> Void
+    ) -> FlowError {
+        let oldCancelAction = self.cancelAction
+        var result = self
+        let title = titleSource ?? oldCancelAction?.title
+        result.cancelAction = CancelAction(title: title) { cancelReason in
+            oldCancelAction?(cancelReason)
+            action(cancelReason)
+        }
+        return result
+    }
     
     /// Returns a flow error that executes the provided closure when the
     /// error is cancelled.
     ///
     /// If the flow error already has a cancel action, both closures are
-    /// run, the existing one first.
+    /// run, the existing one first, and the existing title is preserved.
     ///
-    /// - parameter title: The title of the button that dismisses the
-    ///   error. If nil, the existing title is preserved. By default, the
-    ///   button is titled "OK", "Close", or "Cancel", depending on the
-    ///   presentation and the available actions.
-    /// - parameter perform: A closure called when the user dismisses the
-    ///   error alert with the "Cancel" button, and, generally, for whatever
-    ///   reason given as an argument (see ``ErrorCancelReason``).
+    /// - parameter action: A closure called when the error is cancelled.
     public func onCancel(
-        _ title: String? = nil,
-        _ perform: @escaping @MainActor (_ cancelReason: ErrorCancelReason) -> Void
+        action: @escaping @MainActor (_ cancelReason: ErrorCancelReason) -> Void
     ) -> FlowError {
-        let oldCancelAction = self.cancelAction
-        var result = self
-        result.cancelAction = CancelAction(
-            title: title ?? oldCancelAction?.title,
-            perform: { cancelReason in
-                oldCancelAction?.perform(cancelReason)
-                perform(cancelReason)
-            })
-        return result
+        onCancel(titleSource: nil, action: action)
     }
     
-    // This overload is necessary because a default argument for title is
-    // not enough for `FlowError(...).onRetry(function)` to compile.
+    /// Returns a flow error that executes the provided closure when the
+    /// error is cancelled, with a customized title for the Cancel button
+    /// that is not localized.
+    ///
+    /// If the flow error already has a cancel action, both closures are
+    /// run, the existing one first, and the provided title replaces the
+    /// existing one.
+    ///
+    /// - parameter title: The title of the "Cancel" button, displayed
+    ///   without localization.
+    /// - parameter action: A closure called when the error is cancelled.
+    @_disfavoredOverload
+    public func onCancel(
+        _ title: some StringProtocol,
+        action: @escaping @MainActor (_ cancelReason: ErrorCancelReason) -> Void
+    ) -> FlowError {
+        onCancel(titleSource: .verbatim(title), action: action)
+    }
+    
+    /// Returns a flow error that executes the provided closure when the
+    /// error is cancelled, with a customized title for the Cancel button.
+    ///
+    /// If the flow error already has a cancel action, both closures are
+    /// run, the existing one first, and the provided title replaces the
+    /// existing one.
+    ///
+    /// - parameter title: The localized title of the "Cancel" button.
+    /// - parameter action: A closure called when the error is cancelled.
+    public func onCancel(
+        _ title: LocalizedStringKey,
+        action: @escaping @MainActor (_ cancelReason: ErrorCancelReason) -> Void
+    ) -> FlowError {
+        onCancel(titleSource: .localizedStringKey(title), action: action)
+    }
+    
+    /// Returns a flow error that executes the provided closure when the
+    /// error is cancelled, with a customized title for the Cancel button.
+    ///
+    /// If the flow error already has a cancel action, both closures are
+    /// run, the existing one first, and the provided title replaces the
+    /// existing one.
+    ///
+    /// - parameter title: The localized title of the "Cancel" button.
+    /// - parameter action: A closure called when the error is cancelled.
+    @_disfavoredOverload
+    public func onCancel(
+        _ title: LocalizedStringResource,
+        action: @escaping @MainActor (_ cancelReason: ErrorCancelReason) -> Void
+    ) -> FlowError {
+        onCancel(titleSource: .localizedStringResource(title), action: action)
+    }
+    
+    /// Returns a flow error that executes the provided closure when the
+    /// error is cancelled, with a customized title for the Cancel button
+    /// that is not localized.
+    ///
+    /// If the flow error already has a cancel action, both closures are
+    /// run, the existing one first, and the provided title replaces the
+    /// existing one.
+    ///
+    /// - parameter title: The title of the "Cancel" button, displayed
+    ///   without localization.
+    /// - parameter action: A closure called when the error is cancelled.
+    public func onCancel(
+        verbatim title: String,
+        action: @escaping @MainActor (_ cancelReason: ErrorCancelReason) -> Void
+    ) -> FlowError {
+        onCancel(title, action: action)
+    }
+    
+    func onRetry(
+        titleSource: TextSource?,
+        action: @escaping @MainActor () -> Void
+    ) -> FlowError {
+        let oldRetryAction = self.retryAction
+        var result = self
+        let title = titleSource ?? oldRetryAction?.title ?? .localizedStringResource(.retry)
+        result.retryAction = ErrorAction(titleSource: title) {
+            oldRetryAction?()
+            action()
+        }
+        return result
+    }
     
     /// Returns a flow error that executes the provided closure when the
     /// error is retried.
@@ -340,36 +435,86 @@ extension FlowError {
     /// run, the existing one first, and the existing title is preserved.
     /// Otherwise, the button is titled "Retry".
     ///
-    /// - parameter perform: A closure called when the user hits the
+    /// - parameter action: A closure called when the user hits the
     ///   "Retry" button.
     public func onRetry(
-        _ perform: @escaping @MainActor () -> Void
+        action: @escaping @MainActor () -> Void
     ) -> FlowError {
-        onRetry(
-            retryAction?.title ?? String(localized: .retry, bundle: .module),
-            perform)
+        onRetry(titleSource: nil, action: action)
     }
     
     /// Returns a flow error that executes the provided closure when the
-    /// error is retried.
+    /// error is retried, with a customized title for the Retry button
+    /// that is not localized.
     ///
     /// If the flow error already has a retry action, both closures are
-    /// run, the existing one first.
+    /// run, the existing one first, and the provided title replaces the
+    /// existing one.
     ///
-    /// - parameter title: The title of the "Retry" button.
-    /// - parameter perform: A closure called when the user hits the
+    /// - parameter title: The title of the "Retry" button, displayed
+    ///   without localization.
+    /// - parameter action: A closure called when the user hits the
+    ///   "Retry" button.
+    @_disfavoredOverload
+    public func onRetry(
+        _ title: some StringProtocol,
+        action: @escaping @MainActor () -> Void
+    ) -> FlowError {
+        onRetry(titleSource: .verbatim(title), action: action)
+    }
+    
+    /// Returns a flow error that executes the provided closure when the
+    /// error is retried, with a customized title for the Retry button.
+    ///
+    /// If the flow error already has a retry action, both closures are
+    /// run, the existing one first, and the provided title replaces the
+    /// existing one.
+    ///
+    /// - parameter title: The localized title of the "Retry" button.
+    /// - parameter action: A closure called when the user hits the
     ///   "Retry" button.
     public func onRetry(
-        _ title: String,
-        _ perform: @escaping @MainActor () -> Void
+        _ title: LocalizedStringKey,
+        action: @escaping @MainActor () -> Void
     ) -> FlowError {
-        let oldRetryAction = self.retryAction
-        var result = self
-        result.retryAction = ErrorAction(title: title) {
-            oldRetryAction?.perform()
-            perform()
-        }
-        return result
+        onRetry(titleSource: .localizedStringKey(title), action: action)
+    }
+    
+    /// Returns a flow error that executes the provided closure when the
+    /// error is retried, with a customized title for the Retry button.
+    ///
+    /// If the flow error already has a retry action, both closures are
+    /// run, the existing one first, and the provided title replaces the
+    /// existing one.
+    ///
+    /// - parameter title: The localized title of the "Retry" button.
+    /// - parameter action: A closure called when the user hits the
+    ///   "Retry" button.
+    @_disfavoredOverload
+    public func onRetry(
+        _ title: LocalizedStringResource,
+        action: @escaping @MainActor () -> Void
+    ) -> FlowError {
+        onRetry(titleSource: .localizedStringResource(title), action: action)
+    }
+    
+    /// Returns a flow error that executes the provided closure when the
+    /// error is retried, with a customized title for the Retry button
+    /// that is not localized.
+    ///
+    /// If the flow error already has a retry action, both closures are
+    /// run, the existing one first, and the provided title replaces the
+    /// existing one.
+    ///
+    /// - parameter title: The title of the "Retry" button, displayed
+    ///   without localization.
+    /// - parameter action: A closure called when the user hits the
+    ///   "Retry" button.
+    public func onRetry(
+        verbatim title: String,
+        action: @escaping @MainActor () -> Void
+    ) -> FlowError {
+        onRetry(title, action: action)
     }
     
     /// Returns a flow error without any retry action (useful for
@@ -383,6 +528,31 @@ extension FlowError {
         return result
     }
     
+    private func appendingAction(
+        _ title: TextSource,
+        role: ErrorActionRole? = nil,
+        action: @escaping @MainActor () -> Void
+    ) -> FlowError {
+        appendingAction(ErrorAction(titleSource: title, role: role, action: action))
+    }
+    
+    /// Returns a flow error with an extra supplementary action, with a
+    /// title that is not localized.
+    ///
+    /// See ``appendingAction(_:role:action:)-(LocalizedStringKey,_,_)``.
+    ///
+    /// - parameter title: The action title, displayed without localization.
+    /// - parameter role: The action role.
+    /// - parameter action: A closure called when the user selects the action.
+    @_disfavoredOverload
+    public func appendingAction(
+        _ title: some StringProtocol,
+        role: ErrorActionRole? = nil,
+        action: @escaping @MainActor () -> Void
+    ) -> FlowError {
+        appendingAction(.verbatim(title), role: role, action: action)
+    }
+    
     /// Returns a flow error with an extra supplementary action.
     ///
     /// This method is useful for permission denied errors: add an
@@ -390,15 +560,48 @@ extension FlowError {
     ///
     /// If the user selects this action, the cancel action is run first,
     /// with the ``ErrorCancelReason/supplementaryActionPerformed`` reason.
+    ///
+    /// - parameter title: The localized action title.
+    /// - parameter role: The action role.
+    /// - parameter action: A closure called when the user selects the action.
     public func appendingAction(
-        _ title: String,
+        _ title: LocalizedStringKey,
         role: ErrorActionRole? = nil,
-        perform: @escaping @MainActor () -> Void
+        action: @escaping @MainActor () -> Void
     ) -> FlowError {
-        appendingAction(ErrorAction(
-            title: title,
-            role: role,
-            perform: perform))
+        appendingAction(.localizedStringKey(title), role: role, action: action)
+    }
+    
+    /// Returns a flow error with an extra supplementary action.
+    ///
+    /// See ``appendingAction(_:role:action:)-(LocalizedStringKey,_,_)``.
+    ///
+    /// - parameter title: The localized action title.
+    /// - parameter role: The action role.
+    /// - parameter action: A closure called when the user selects the action.
+    @_disfavoredOverload
+    public func appendingAction(
+        _ title: LocalizedStringResource,
+        role: ErrorActionRole? = nil,
+        action: @escaping @MainActor () -> Void
+    ) -> FlowError {
+        appendingAction(.localizedStringResource(title), role: role, action: action)
+    }
+    
+    /// Returns a flow error with an extra supplementary action, with a
+    /// title that is not localized.
+    ///
+    /// See ``appendingAction(_:role:action:)-(LocalizedStringKey,_,_)``.
+    ///
+    /// - parameter title: The action title, displayed without localization.
+    /// - parameter role: The action role.
+    /// - parameter action: A closure called when the user selects the action.
+    public func appendingAction(
+        verbatim title: String,
+        role: ErrorActionRole? = nil,
+        action: @escaping @MainActor () -> Void
+    ) -> FlowError {
+        appendingAction(title, role: role, action: action)
     }
     
     /// Returns a flow error with an extra supplementary action.
@@ -420,15 +623,27 @@ extension FlowError {
     /// If the flow error already has a `finally` closure, both closures
     /// are run, the existing one first.
     ///
-    /// - parameter perform: A closure to run at the end of all error
+    /// - parameter action: A closure to run at the end of all error
     ///   actions (cancel, retry, supplementary actions).
-    public func finally(_ perform: @escaping @MainActor () -> Void) -> FlowError {
+    public func finally(action: @escaping @MainActor () -> Void) -> FlowError {
         let oldFinally = self.finally
         var result = self
         result.finally = {
             oldFinally?()
-            perform()
+            action()
         }
+        return result
+    }
+    
+    /// Returns a flow error with a customized title that is not localized.
+    ///
+    /// See ``withTitle(_:)-(LocalizedStringKey)``.
+    ///
+    /// - parameter title: The error title, displayed without localization.
+    @_disfavoredOverload
+    public func withTitle(_ title: some StringProtocol) -> FlowError {
+        var result = self
+        result.title = .verbatim(title)
         return result
     }
     
@@ -474,11 +689,34 @@ extension FlowError {
     /// }
     /// ```
     ///
-    /// See ``title`` for more information.
-    public func withTitle(_ title: String) -> FlowError {
+    /// - parameter title: The localized error title.
+    public func withTitle(
+        _ title: LocalizedStringKey
+    ) -> FlowError {
         var result = self
-        result.title = title
+        result.title = .localizedStringKey(title)
         return result
+    }
+    
+    /// Returns a flow error with a customized title.
+    ///
+    /// See ``withTitle(_:)-(LocalizedStringKey)``.
+    ///
+    /// - parameter title: The localized error title.
+    @_disfavoredOverload
+    public func withTitle(_ title: LocalizedStringResource) -> FlowError {
+        var result = self
+        result.title = .localizedStringResource(title)
+        return result
+    }
+    
+    /// Returns a flow error with a customized title that is not localized.
+    ///
+    /// See ``withTitle(_:)-(LocalizedStringKey)``.
+    ///
+    /// - parameter title: The error title, displayed without localization.
+    public func withTitle(verbatim title: String) -> FlowError {
+        withTitle(title)
     }
     
     /// Returns a flow error with a different error (useful when unwrapping
@@ -492,22 +730,25 @@ extension FlowError {
 
 // MARK: - ErrorCancelReason
 
-/// The reason why the ``FlowError`` `onCancel` handler is invoked.
-public enum ErrorCancelReason {
+/// The reason why the cancel action of a ``FlowError`` is run.
+public enum ErrorCancelReason: Sendable {
     /// The user has dismissed the error with the cancel button, or
     /// ``FlowError/performCancelAction()`` was called.
     case userCancelled
     
     /// The error was not presented to the user (for example, an error
-    /// handler returned ``FlowErrorHandling/cancel``), or it was discarded
-    /// due to a conflict with another error.
+    /// handler returned ``FlowErrorHandling/cancel``), it was discarded
+    /// due to a conflict with another error, or the view that presented
+    /// it in an alert has disappeared.
     case presentationCancelled
     
-    /// The user has selected a supplementary action that was appended,
-    /// before the error was presented, with
-    /// ``FlowError/appendingAction(_:)``.
+    /// The user has selected a supplementary action (see
+    /// ``FlowError/supplementaryActions``).
     ///
-    /// Such a supplementary action can be an "Open Settings" action added
-    /// by a ``FlowErrorHandler``, for example.
+    /// The cancel action runs first, with this reason, and then the
+    /// supplementary action. This lets the code that created the flow error
+    /// clean up, even when the supplementary action was added by
+    /// someone else, such as an "Open Settings" action added by a
+    /// ``FlowErrorHandler``.
     case supplementaryActionPerformed
 }

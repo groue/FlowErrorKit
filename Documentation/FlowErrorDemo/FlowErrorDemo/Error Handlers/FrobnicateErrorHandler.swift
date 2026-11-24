@@ -15,8 +15,8 @@ struct FrobnicateErrorHandler: FlowErrorHandler {
         
         // Present the error
         return .present(ErrorPresentation(
+            flowError: presentedFlowError,
             title: frobnicateError.title,
-            message: frobnicateError.message,
-            flowError: presentedFlowError))
+            message: frobnicateError.message))
     }
 }

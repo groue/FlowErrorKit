@@ -70,7 +70,7 @@ extension View {
     ///         } catch {
     ///             // Turn the error into a FlowError
     ///             flowError = FlowError(error: error)
-    ///                 .onRetry(performFailableAction)
+    ///                 .onRetry(action: performFailableAction)
     ///         }
     ///     }
     /// }

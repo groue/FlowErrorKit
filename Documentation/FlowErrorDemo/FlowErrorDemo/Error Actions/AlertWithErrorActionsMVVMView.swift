@@ -26,7 +26,7 @@ import SwiftUI
             // Turn the error into a FlowError
             flowError = FlowError(error: error)
                 .onCancel { _ in self.emoji = nil }
-                .onRetry(pickEmoji)
+                .onRetry(action: pickEmoji)
         }
     }
 }

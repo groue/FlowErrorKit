@@ -35,7 +35,7 @@ import Foundation
         } catch {
             flowError = FlowError(error: error)
                 .onCancel { _ in self.flashCancelled() }
-                .onRetry(throwDefaultErrorWithRetry)
+                .onRetry(action: throwDefaultErrorWithRetry)
         }
     }
     
@@ -67,7 +67,7 @@ import Foundation
         } catch {
             flowError = FlowError(error: error)
                 .onCancel { _ in self.flashCancelled() }
-                .onRetry(throwVerbatimErrorWithRetry)
+                .onRetry(action: throwVerbatimErrorWithRetry)
         }
     }
     
@@ -141,7 +141,7 @@ import Foundation
         } catch {
             flowError = FlowError(error: error)
                 .onCancel { _ in self.flashCancelled() }
-                .onRetry(throwPermissionErrorWithRetry)
+                .onRetry(action: throwPermissionErrorWithRetry)
         }
     }
     
@@ -185,7 +185,7 @@ import Foundation
         } catch {
             flowError = FlowError(error: error)
                 .onCancel { _ in self.flashCancelled() }
-                .onRetry(throwCodeSigningErrorWithRetry)
+                .onRetry(action: throwCodeSigningErrorWithRetry)
         }
     }
     
@@ -206,7 +206,7 @@ import Foundation
         } catch {
             flowError = FlowError(error: error)
                 .onCancel { _ in self.flashCancelled() }
-                .onRetry(throwRandomErrorWithRetry)
+                .onRetry(action: throwRandomErrorWithRetry)
         }
     }
     
@@ -240,11 +240,8 @@ import Foundation
     }
     
     private func makeDefaultError() -> Error {
-        URLError(
-            .networkConnectionLost,
-            userInfo: [
-                NSLocalizedDescriptionKey: "The network connection was lost",
-            ])
+        // An error that is not handled by any error handler.
+        ServerError(statusCode: 500)
     }
     
     private func flashCancelled() {

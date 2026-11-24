@@ -22,8 +22,8 @@ public struct CocoaErrorHandler: FlowErrorHandler {
             // The localized message must be shown so that the developer
             // understands what's wrong.
             return .present(ErrorPresentation(
-                title: error.localizedDescription,
-                flowError: flowError.droppingRetryAction()))
+                flowError: flowError.droppingRetryAction(),
+                title: error.localizedDescription))
             
         default:
             // Present a generic redacted error, because most CocoaErrors

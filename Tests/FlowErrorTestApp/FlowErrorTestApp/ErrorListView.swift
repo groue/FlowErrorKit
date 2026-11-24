@@ -249,29 +249,31 @@ struct ErrorListView: View {
                 }
             }
             .navigationTitle("💥 Flow Errors")
-            .toolbar {
-                ToolbarItem(placement: .bottomBar) {
-                    if viewModel.flowError == nil {
-                        Text("Alert visible").opacity(0.1)
-                    } else {
-                        Text("Alert visible")
-                    }
-                }
-                
-                ToolbarItem(placement: .bottomBar) {
-                    if viewModel.errorIsCancelled {
-                        Text("Cancelled")
-                    } else {
-                        Text("Cancelled")
-                            .foregroundColor(Color(uiColor: .quaternaryLabel))
-                    }
-                }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                statusBar
             }
         }
         .presentError($viewModel.flowError, with: .alert)
         .handleError(with: viewModel) // After error is presented, so that viewModel can handle errors
     }
     
+    /// A bar at the bottom of the screen that shows whether an alert is
+    /// visible, and flashes when an error is cancelled.
+    var statusBar: some View {
+        HStack {
+            Text("Alert visible")
+                .opacity(viewModel.flowError == nil ? 0.1 : 1)
+            Spacer()
+            Text("Cancelled")
+                .foregroundStyle(viewModel.errorIsCancelled
+                                 ? Color.primary
+                                 : Color(uiColor: .quaternaryLabel))
+        }
+        .padding()
+        .background(.bar)
+        .overlay(alignment: .top) { Divider() }
+    }
+
     func header(title: String, message: LocalizedStringKey...) -> some View {
         struct Message: Identifiable {
             let id: Int

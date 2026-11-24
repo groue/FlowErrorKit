@@ -1,3 +1,5 @@
+import SwiftUI
+
 // `ErrorAction` is a class because making it a struct would have made it less
 // easy to use with SwiftUI. `ForEach` likes to iterate collections of
 // `Identifiable` values. `Identifiable` conformance is free for classes, but it
@@ -28,29 +30,104 @@
 ///
 /// ## Topics
 ///
+/// ### Creating an error action
+///
+/// - ``init(_:role:action:)-(LocalizedStringKey,_,_)``
+/// - ``init(_:role:action:)-(LocalizedStringResource,_,_)``
+/// - ``init(_:role:action:)-(StringProtocol,_,_)``
+/// - ``init(verbatim:role:action:)``
+///
+/// ### Error action information
+///
+/// - ``title``
+/// - ``role``
+///
 /// ### Supporting Types
 ///
 /// - ``ErrorActionRole``
-public final class ErrorAction: Identifiable {
+@MainActor public final class ErrorAction: Identifiable {
     /// The action title ("Cancel", "Retry", etc.)
-    public let title: String
+    public let title: TextSource
     
     /// The action role.
     public let role: ErrorActionRole?
     
     // MUST NOT BE PUBLIC, because actions MUST be run by `FlowError`.
     /// The function called when the user selects the action.
-    let perform: @MainActor () -> Void
+    private let action: @MainActor () -> Void
     
     /// Creates an `ErrorAction`.
-    public init(
-        title: String,
+    init(
+        titleSource: TextSource,
         role: ErrorActionRole? = nil,
-        perform: @escaping @MainActor () -> Void
+        action: @escaping @MainActor () -> Void
     ) {
-        self.title = title
+        self.title = titleSource
         self.role = role
-        self.perform = perform
+        self.action = action
+    }
+    
+    /// Creates an `ErrorAction` with a title that is not localized.
+    ///
+    /// - parameters:
+    ///     - title: The action title, displayed without localization.
+    ///     - role: The action role.
+    ///     - action: The closure called when the user selects the action.
+    @_disfavoredOverload
+    convenience public init(
+        _ title: some StringProtocol,
+        role: ErrorActionRole? = nil,
+        action: @escaping @MainActor () -> Void
+    ) {
+        self.init(titleSource: .verbatim(title), role: role, action: action)
+    }
+    
+    /// Creates an `ErrorAction` with a localized title.
+    ///
+    /// - parameters:
+    ///     - title: The localized action title.
+    ///     - role: The action role.
+    ///     - action: The closure called when the user selects the action.
+    convenience public init(
+        _ title: LocalizedStringKey,
+        role: ErrorActionRole? = nil,
+        action: @escaping @MainActor () -> Void
+    ) {
+        self.init(titleSource: .localizedStringKey(title), role: role, action: action)
+    }
+    
+    /// Creates an `ErrorAction` with a localized title.
+    ///
+    /// - parameters:
+    ///     - title: The localized action title.
+    ///     - role: The action role.
+    ///     - action: The closure called when the user selects the action.
+    @_disfavoredOverload
+    convenience public init(
+        _ title: LocalizedStringResource,
+        role: ErrorActionRole? = nil,
+        action: @escaping @MainActor () -> Void
+    ) {
+        self.init(titleSource: .localizedStringResource(title), role: role, action: action)
+    }
+    
+    /// Creates an `ErrorAction` with a title that is not localized.
+    ///
+    /// - parameters:
+    ///     - title: The action title, displayed without localization.
+    ///     - role: The action role.
+    ///     - action: The closure called when the user selects the action.
+    convenience public init(
+        verbatim title: String,
+        role: ErrorActionRole? = nil,
+        action: @escaping @MainActor () -> Void
+    ) {
+        self.init(title, role: role, action: action)
+    }
+    
+    // MUST NOT BE PUBLIC, because actions MUST be run by `FlowError`.
+    func callAsFunction() {
+        action()
     }
 }
 
@@ -60,7 +137,12 @@ public final class ErrorAction: Identifiable {
 ///
 /// ### Building SwiftUI ButtonRole
 ///
-/// - ``SwiftUI/ButtonRole/init(role:)``
+/// - ``SwiftUI/ButtonRole/init(_:)``
 public enum ErrorActionRole: Sendable {
+    /// A role that indicates a destructive action, such as deleting
+    /// user data.
+    ///
+    /// It is displayed as a SwiftUI `Button` with the
+    /// `ButtonRole.destructive` role.
     case destructive
 }
