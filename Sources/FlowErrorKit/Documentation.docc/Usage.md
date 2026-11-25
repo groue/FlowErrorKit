@@ -67,6 +67,21 @@ struct MySheet: View {
 }
 ```
 
+The view also knows which operation has failed. This makes it the right place to describe the failure to the user, with a title:
+
+```swift
+func save() {
+    do {
+        try saveDocument()
+    } catch {
+        flowError = FlowError(error: error)
+            .withTitle("Could not save the document")
+    }
+}
+```
+
+The title is optional. But without a title, the user is only told what went wrong, not which operation has failed.
+
 > Tip: At this step, most views do not handle specific kinds of errors, and just turn all errors into `FlowError`:
 >
 > ```swift
@@ -86,7 +101,7 @@ struct MySheet: View {
 >
 > However, some errors are always handled in the same way throughout the application, and some errors need to trigger side effects somewhere up in the view hierarchy. In these cases, views should not catch specific errors, and instead let the **flow error handlers** registered in the SwiftUI environment perform their own error handling. Flow error handlers are introduced below.
 >
-> This is why views that catch specific errors should remain the exception. As far as views are concerned, at this step, their task is only to focus on the user interface by creating a `FlowError` instance with the needed callbacks. For example, provide an `onRetry` callback if the presented error should have a "Retry" button for recoverable errors.
+> This is why views that catch specific errors should remain the exception. As far as views are concerned, at this step, their task is only to focus on the user interface by creating a `FlowError` instance with a title and the needed callbacks. For example, provide an `onRetry` callback if the presented error should have a "Retry" button for recoverable errors.
 
 ### Present flow errors in the user interface
 

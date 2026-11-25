@@ -5,12 +5,12 @@ description: Rules and pitfalls for SwiftUI code that uses FlowErrorKit (FlowErr
 
 # FlowErrorKit
 
-Learn the library from its DocC documentation
-(`Sources/FlowErrorKit/Documentation.docc`, and the doc comments of
-public declarations). Rely on the public API only: never read the
-implementation, even to check a behavior.
-
-This skill only lists what the documentation does not make obvious.
+Learn the library from its DocC documentation, in
+`Sources/FlowErrorKit/Documentation.docc`: `Usage.md` for the overall
+workflow, `FlowError.md` for error actions, `FlowErrorHandler.md` for
+error handlers, and the doc comments of public declarations for the
+details. Rely on the public API only: never read the implementation,
+even to check a behavior.
 
 ## Each Swift error must be handled exactly once
 
@@ -100,14 +100,14 @@ With `presentError($flowError, with: $errorPresentation)`:
   // Intent: dismiss whatever happens to the error.
   // GOOD
   FlowError(error: error)
-      .appendingAction("Delete Video", role: .destructive) { deleteVideo() }
+      .appendingAction("Delete Document", role: .destructive) { deleteDocument() }
       .finally { dismiss() }
 
   // BAD: the screen stays when a handler cancels the presentation,
   // or when the user selects an action appended by a handler.
   FlowError(error: error)
-      .appendingAction("Delete Video", role: .destructive) {
-          deleteVideo()
+      .appendingAction("Delete Document", role: .destructive) {
+          deleteDocument()
           dismiss()
       }
   ```
@@ -117,8 +117,8 @@ With `presentError($flowError, with: $errorPresentation)`:
   // otherwise, so that the user can fix the error.
   // GOOD
   FlowError(error: error)
-      .appendingAction("Delete Video", role: .destructive) {
-          deleteVideo()
+      .appendingAction("Delete Document", role: .destructive) {
+          deleteDocument()
           dismiss()
       }
 
@@ -127,7 +127,7 @@ With `presentError($flowError, with: $errorPresentation)`:
   // with `appendingAction`.
   FlowError(error: error)
       .onCancel { _ in dismiss() }
-      .appendingAction("Delete Video", role: .destructive) { deleteVideo() }
+      .appendingAction("Delete Document", role: .destructive) { deleteDocument() }
   ```
 
   ```swift
@@ -142,8 +142,8 @@ With `presentError($flowError, with: $errorPresentation)`:
               break
           }
       }
-      .appendingAction("Delete Video", role: .destructive) {
-          deleteVideo()
+      .appendingAction("Delete Document", role: .destructive) {
+          deleteDocument()
           dismiss()
       }
   ```
@@ -158,13 +158,13 @@ With `presentError($flowError, with: $errorPresentation)`:
     Mode), and a Retry button helps the user recover quickly.
 
   ```swift
-  func archive(_ video: Video) async {
+  func send(_ message: Message) async {
       do {
-          try await videoService.archive(video)
+          try await messageService.send(message)
       } catch {
           flowError = FlowError(error: error)
-              .withTitle("The video could not be archived")
-              .onRetry { Task { await archive(video) } }
+              .withTitle("The message could not be sent")
+              .onRetry { Task { await send(message) } }
       }
   }
   ```
@@ -303,6 +303,16 @@ chain, and register this same chain in the app and in every preview.
 
 ## Error texts
 
+- At the catch site, give the flow error a title that names the failed
+  operation (`.withTitle("The message could not be sent")`), unless the
+  end user can't miss which operation has failed on this screen.
+
+  The reason is that the end user should know which operation has
+  failed, and why. Error handlers see the error, so they can explain
+  why, with the title and message of the error presentation they
+  return. But they do not know the failed operation: only the catch
+  site does. When both provide a title, the title of the flow error is
+  displayed first, and the title of the handler below it.
 - Built-in presentations display the raw error in DEBUG builds: do not
   append debug details to titles or messages.
 - String literals are localized and extracted to the string catalog: no
