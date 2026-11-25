@@ -42,6 +42,11 @@ extension EnvironmentValues {
     ///     }
     /// }
     /// ```
+    ///
+    /// An error passed to `errorHandler.handle(_:)` should not also be
+    /// turned into a flow error displayed with
+    /// ``SwiftUICore/View/presentError(_:with:)-(_,FlowErrorPresenter)``:
+    /// the handlers would run twice, and so would their side effects.
     public internal(set) var errorHandler: FlowErrorHandlerChain {
         get { self[FlowErrorHandlerChainKey.self] }
         set { self[FlowErrorHandlerChainKey.self] = newValue }

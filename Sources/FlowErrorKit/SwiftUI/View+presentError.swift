@@ -32,18 +32,7 @@ extension View {
     /// error presentation.
     ///
     /// Applications should display an ``ErrorPresentationView``
-    /// with the provided error presentation.
-    ///
-    /// Unlike an alert, the error presentation is not cleared when the
-    /// user selects an error action. Applications should set `flowError`
-    /// to nil in order to clear the `errorPresentation` binding (for
-    /// example, when a retried action succeeds).
-    ///
-    /// If a new flow error is set while a previous one is presented, the
-    /// new error replaces the previous one, and the cancel action of the
-    /// previous one is run.
-    ///
-    /// For example:
+    /// with the provided error presentation. For example:
     ///
     /// ```swift
     /// import FlowErrorKit
@@ -67,6 +56,8 @@ extension View {
     ///     func performFailableAction() {
     ///         do {
     ///             try failableMethod()
+    ///             // Success: remove the ErrorPresentationView
+    ///             flowError = nil
     ///         } catch {
     ///             // Turn the error into a FlowError
     ///             flowError = FlowError(error: error)
@@ -76,10 +67,33 @@ extension View {
     /// }
     /// ```
     ///
+    /// Unlike an alert, the error presentation is not automatically
+    /// cleared when the user selects an error action. Applications clear
+    /// it by setting `flowError` to nil (for example, when a retried
+    /// action succeeds), as in the sample code above.
+    ///
+    /// When an application does not set `flowError` to nil and the error
+    /// presentation remains on screen, the user may select an error
+    /// action several times. For example, the user may come back from an
+    /// "Open Settings" action, and select it again. In this case, the flow
+    /// error should be created with `allowMultipleActionExecutions`.
+    /// Otherwise, a test failure is reported when an action is performed
+    /// more than once (see ``FlowError/performAction(_:)``).
+    ///
+    /// If a new flow error is set while a previous one is presented, the
+    /// new error replaces the previous one, and the cancel action of the
+    /// previous one is run.
+    ///
+    /// However, a ``FlowErrorHandler`` may prevent the presentation of a
+    /// flow error (see ``FlowErrorHandling/cancel``). In this case, the
+    /// cancel action of this flow error runs, and `errorPresentation` is
+    /// not modified: a previously presented error, if any, remains on
+    /// screen, and is not replaced.
+    ///
     /// - parameter flowError: A binding to an optional flow error.
     /// - parameter errorPresentation: A binding to an optional error
-    ///   presentation. It is set, or cleared, whenever `flowError`
-    ///   is modified.
+    ///   presentation. It is set when a flow error is presented, and
+    ///   cleared when `flowError` is set to nil.
     public func presentError(
         _ flowError: Binding<FlowError?>,
         with errorPresentation: Binding<ErrorPresentation?>

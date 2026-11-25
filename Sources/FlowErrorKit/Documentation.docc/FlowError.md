@@ -32,6 +32,12 @@ struct MyView: View {
 }
 ```
 
+### Where to Create Flow Errors
+
+A good practice is to always create a `FlowError` from a `catch` clause, or from a callback that delivers each error once. Think of a `FlowError` as an event: an error was caught, and now it needs to be handled.
+
+In particular, avoid creating flow errors in a view `body`, which SwiftUI evaluates many times, or from errors stored for later use, such as a `Result`. The same error could then be handled several times. And each time, the error handlers of the application could perform their side effects again, such as signing the user out (see ``FlowErrorHandler``).
+
 ### Error Actions
 
 `FlowError` allows the view to specify the **error actions** that the user can select when the error is presented:
@@ -43,7 +49,7 @@ struct MyView: View {
         .onCancel { _ in print("Cancelled") }
     ```
 
-- The **Retry action** is run when the user hits the "Retry" button:
+- The **Retry action** is run when the user hits the "Retry" button. It is useful when the screen does not let the user run the failed operation again easily, or at all:
 
     ```swift
     flowError = FlowError(error: error)
@@ -64,16 +70,21 @@ struct MyView: View {
         .finally { print("Error was handled") }
     ```
 
+> Tip: Besides the code that creates the flow error, error handlers can also add or remove actions before the error is presented (see ``FlowErrorHandler``). Each one is in a good position to decide about different actions:
+>
+> - The code that creates the flow error has run the failed operation, and knows what failed. This makes it the right place for the actions that depend on this operation, such as retrying it, or deleting a document that failed to load.
+> - An error handler only sees the error, whatever the operation that failed. This makes it the right place for the actions that depend on the kind of error, such as an "Open Settings" action for `CLError.denied`, or the removal of the retry action for errors that retrying can't fix. This is why the code that creates the flow error can add a retry action without checking the error.
+
 ### Detailed Actions Handling
 
 As long as the flow error is presented by the SwiftUI view, it is guaranteed that one error action will be performed:
 
 - The performed action is the one selected by the user in the presented alert, or in the ``ErrorPresentationView``.
 - If a ``FlowErrorHandler`` cancels the error presentation, then the cancel action is automatically run.
-- If a ``FlowErrorHandler`` appends a supplementary action, and the user selects it, then the cancel action is run before the supplementary action.
+- If the user selects a supplementary action, the cancel action is run first, with the ``ErrorCancelReason/supplementaryActionPerformed`` reason. This includes supplementary actions appended by a ``FlowErrorHandler``.
 - If a view wants to present a new flow error while a previous one is still presented on screen, the outcome depends on the presentation:
     - With an alert (`.presentError($flowError, with: .alert)`), the new error is not presented, and its cancel action is run.
-    - With an error presentation binding (`.presentError($flowError, with: $errorPresentation)`), the new error replaces the previous one, and the cancel action of the previous one is run.
+    - With an error presentation binding (`.presentError($flowError, with: $errorPresentation)`), the new error replaces the previous one, and the cancel action of the previous one is run. If a ``FlowErrorHandler`` cancels the presentation of the new error, the previous one remains presented, and the cancel action of the new one is run.
 - If the view that presents the error disappears, the outcome depends on the presentation:
     - With an alert, the alert is removed, the flow error binding is set to nil, and the cancel action is run.
     - With an error presentation binding, nothing happens: the error presentation remains in the binding, and the application remains responsible for displaying it, and for removing it from the screen.
@@ -99,6 +110,33 @@ There are two exceptions:
     ```
 
 - ⚠️ When SwiftUI prevents the error presentation (because an unexpected alert or sheet is already presented), no error action is run. This is a known issue, and a future version of `FlowErrorKit` should address it.
+
+> Tip: As described above, the cancel action does not only run when the user dismisses the error. So code that must run whatever the outcome fits best in `finally`, and code that is specific to an action fits best in the closure of this action:
+>
+> ```swift
+> // Dismiss the screen whatever happens.
+> flowError = FlowError(error: error)
+>     .appendingAction("Delete Document", role: .destructive) { deleteDocument() }
+>     .finally { dismiss() }
+>
+> // Dismiss the screen after deletion only.
+> flowError = FlowError(error: error)
+>     .appendingAction("Delete Document", role: .destructive) {
+>         deleteDocument()
+>         dismiss()
+>     }
+> ```
+>
+> When some code must only run in some of the situations of the cancel action, the ``ErrorCancelReason`` argument of `onCancel` tells which situation occurred.
+
+### Localization
+
+Like SwiftUI `Text`, the titles of flow errors and actions are localized when you provide a string literal, and displayed verbatim when you provide a `String`:
+
+```swift
+FlowError(error: error).withTitle("Could not save")  // localized
+FlowError(error: error).withTitle(serverMessage)     // verbatim
+```
 
 ## Topics
 

@@ -10,10 +10,8 @@ import SwiftUI
 /// In the DEBUG configuration, the view also describes the presented
 /// error.
 ///
-/// - Tip: In some scenarios, you might need to create a `FlowError`
-/// with the `allowMultipleActionExecutions` flag, or the user might not
-/// be able to select an action multiple times from the error
-/// presentation view (such as an "Open Settings" supplementary action).
+/// Unlike an alert, the view remains on screen after the user selects an
+/// action, until your application removes it.
 public struct ErrorPresentationView<Footer: View>: View {
     private var errorPresentation: ErrorPresentation
     private var actions: ErrorActionsVisibility

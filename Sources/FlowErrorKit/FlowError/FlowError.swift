@@ -222,11 +222,10 @@ import Synchronization
     ///     - error: The caught error.
     ///     - allowMultipleActionExecutions: The default is false. When
     ///       true, several error actions can be executed, and the `finally`
-    ///       closure can run several times. You might need to set this
-    ///       flag in some scenarios, otherwise the user might not be able
-    ///       to select an action multiple times from an
-    ///       `ErrorPresentationView` (such as an "Open Settings"
-    ///       supplementary action).
+    ///       closure can run several times. This is useful when the error
+    ///       is displayed in an ``ErrorPresentationView``, and the user may
+    ///       need to select an action again (see
+    ///       ``SwiftUICore/View/presentError(_:with:)-(_,Binding<ErrorPresentation?>)``).
     public init(
         error: any Error,
         allowMultipleActionExecutions: Bool = false)

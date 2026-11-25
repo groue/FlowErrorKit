@@ -18,6 +18,14 @@ import SwiftUI
 ///     .withMessage("Please grant access to your location in the Settings application.")
 /// ```
 ///
+/// Like SwiftUI `Text`, titles and messages are localized when you provide
+/// a string literal, and displayed verbatim when you provide a `String`:
+///
+/// ```swift
+/// ErrorPresentation(flowError: flowError, title: "Unknown User")  // localized
+/// ErrorPresentation(flowError: flowError, title: serverMessage)   // verbatim
+/// ```
+///
 /// ## Topics
 ///
 /// ### Creating an error presentation

@@ -102,8 +102,12 @@ struct ConflictingErrorPresentationsView: View {
         flowError = FlowError(error: error, allowMultipleActionExecutions: true)
             .onCancel { reason in
                 events.append("⏹️ \(error)")
+                // Erase the error view when the user hits the Cancel button.
+                // But when the cancel block is run because a supplementary
+                // action is run ("Throw CountedError", and then hit the
+                // "Throw IgnoredError" button from its supplementary actions),
+                // we don't want to erase the error view.
                 if reason == .userCancelled {
-                    #warning("TODO: why?")
                     flowError = nil
                 }
             }

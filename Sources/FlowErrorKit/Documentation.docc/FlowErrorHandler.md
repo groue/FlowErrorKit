@@ -36,6 +36,8 @@ struct MyView: View {
 }
 ```
 
+Besides choosing how an error is presented, an error handler can add or remove the actions of a flow error, with methods such as ``FlowError/appendingAction(_:role:action:)-(LocalizedStringKey,_,_)`` and ``FlowError/droppingRetryAction()``. <doc:FlowError#Error-Actions> describes which actions are best handled by error handlers.
+
 ### The Chain of Flow Error Handlers
 
 As multiple error handlers enter the SwiftUI environment, they build a **chain of error handlers**.
@@ -154,6 +156,33 @@ struct FormView: View {
         }
         .presentError($flowError, with: .alert)
     }
+}
+```
+
+### Sharing Handlers Between the App and Its Previews
+
+Application-wide error handlers are usually registered on the scene, with ``SwiftUI/Scene/handleError(with:)``, so that they apply to all windows. SwiftUI previews, however, do not run the `App` body, and do not use these handlers. For previews to present errors as the app does, the application-wide handlers can be declared once, in a ``FlowErrorHandlerChain`` built from the default chain:
+
+```swift
+extension FlowErrorHandler where Self == FlowErrorHandlerChain {
+    static var appErrorHandlers: Self {
+        FlowErrorHandlerChain.default.prepending([
+            MyErrorHandler(),
+            CLErrorHandler(),
+        ])
+    }
+}
+```
+
+This chain is then registered in the app, and in every preview:
+
+```swift
+WindowGroup { RootView() }
+    .handleError(with: .appErrorHandlers)
+
+#Preview {
+    RecipeListView()
+        .handleError(with: .appErrorHandlers)
 }
 ```
 
