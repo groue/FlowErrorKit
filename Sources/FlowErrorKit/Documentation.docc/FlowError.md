@@ -78,7 +78,7 @@ As long as the flow error is presented by the SwiftUI view, it is guaranteed tha
     - With an alert, the alert is removed, the flow error binding is set to nil, and the cancel action is run.
     - With an error presentation binding, nothing happens: the error presentation remains in the binding, and the application remains responsible for displaying it, and for removing it from the screen.
 
-There are three exceptions:
+There are two exceptions:
 
 - When a flow error is programmatically dismissed, no error action is run. If needed, the cancel action can be performed explicitly, as below:
 
@@ -97,8 +97,6 @@ There are three exceptions:
         }
     }
     ```
-
-- When an ``ErrorPresentationView`` is created from a flow error, and a ``FlowErrorHandler`` cancels the error presentation, the view still displays the error with a default presentation, and the cancel action is not run. Indeed, the view can not hide itself: it is the responsibility of the application to remove it from the screen.
 
 - ⚠️ When SwiftUI prevents the error presentation (because an unexpected alert or sheet is already presented), no error action is run. This is a known issue, and a future version of `FlowErrorKit` should address it.
 

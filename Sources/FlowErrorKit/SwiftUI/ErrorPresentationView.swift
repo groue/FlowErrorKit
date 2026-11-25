@@ -1,9 +1,11 @@
-import IssueReporting
 import SwiftUI
 
 // MARK: - ErrorPresentationView
 
 /// A view that conveys an error state.
+///
+/// You get the displayed error presentation by presenting a flow error
+/// with ``SwiftUICore/View/presentError(_:with:)-(_,Binding<ErrorPresentation?>)``.
 ///
 /// In the DEBUG configuration, the view also describes the presented
 /// error.
@@ -13,25 +15,7 @@ import SwiftUI
 /// be able to select an action multiple times from the error
 /// presentation view (such as an "Open Settings" supplementary action).
 public struct ErrorPresentationView<Footer: View>: View {
-    private enum ErrorSource: Equatable {
-        case errorPresentation(ErrorPresentation)
-        case flowError(FlowError)
-        
-        static func == (lhs: Self, rhs: Self) -> Bool {
-            switch(lhs, rhs) {
-            case (.errorPresentation(let lhs), .errorPresentation(let rhs)):
-                lhs == rhs
-            case (.flowError(let lhs), .flowError(let rhs)):
-                lhs.id == rhs.id
-            default:
-                false
-            }
-        }
-    }
-    
-    @Environment(\.errorHandler) private var errorHandler
-    @State private var errorPresentation: ErrorPresentation?
-    private var source: ErrorSource
+    private var errorPresentation: ErrorPresentation
     private var actions: ErrorActionsVisibility
     private var footer: Footer
     
@@ -48,61 +32,16 @@ public struct ErrorPresentationView<Footer: View>: View {
         actions: ErrorActionsVisibility = .automatic,
         @ViewBuilder footer: (() -> Footer) = { EmptyView() })
     {
-        self.source = .errorPresentation(errorPresentation)
-        self.actions = actions
-        self.footer = footer()
-    }
-    
-    /// Creates a view that handles a flow error and displays an error
-    /// presentation.
-    ///
-    /// The flow error is handled by the chain of flow error handlers
-    /// registered in the SwiftUI environment (see
-    /// ``SwiftUICore/EnvironmentValues/errorHandler``).
-    ///
-    /// The view always displays the flow error. If a flow error handler
-    /// returns ``FlowErrorHandling/cancel``, the view displays a default
-    /// presentation, and the cancel action of the flow error is not run.
-    ///
-    /// - parameter flowError: A flow error.
-    /// - parameter actions: The visibility of the error action buttons.
-    ///   The default `.automatic` shows the retry and supplementary
-    ///   actions, but not the cancel action. Use `.includingCancel` to
-    ///   also show the cancel action, and `.hidden` to hide all actions.
-    /// - parameter footer: A view to display below error actions.
-    public init(
-        _ flowError: FlowError,
-        actions: ErrorActionsVisibility = .automatic,
-        @ViewBuilder footer: (() -> Footer) = { EmptyView() })
-    {
-        self.source = .flowError(flowError)
+        self.errorPresentation = errorPresentation
         self.actions = actions
         self.footer = footer()
     }
     
     public var body: some View {
-        content.onChange(of: source, initial: true) {
-            switch source {
-            case .errorPresentation(let presentation):
-                errorPresentation = presentation
-            case .flowError(let flowError):
-                errorPresentation?.flowError.discard(.presentationCancelled)
-                let presentation = errorHandler.handle(flowError).errorPresentation
-                errorPresentation = presentation ?? ErrorPresentation(flowError: flowError)
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private var content: some View {
-        if let errorPresentation {
-            ContentUnavailableView.error(
-                errorPresentation,
-                actions: actions,
-                footer: { footer })
-        } else {
-            Color.clear
-        }
+        ContentUnavailableView.error(
+            errorPresentation,
+            actions: actions,
+            footer: { footer })
     }
 }
 
@@ -328,17 +267,12 @@ struct PreviewError: Error { }
             systemImage: "wifi.exclamationmark"))
 }
 
-#Preview("Retry ErrorPresentation") {
+#Preview("Retry") {
     ErrorPresentationView(
         ErrorPresentation(
             flowError: FlowError(error: PreviewError()).onRetry { },
             verbatimTitle: "An Error Occurred",
             message: "Could not frobnicate the fubar."))
-}
-
-#Preview("Retry FlowError") {
-    let flowError = FlowError(error: PreviewError()).onRetry { }
-    ErrorPresentationView(flowError)
 }
 
 #Preview("Visible Cancel Action") {
