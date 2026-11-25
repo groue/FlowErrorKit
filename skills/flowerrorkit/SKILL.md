@@ -9,8 +9,17 @@ Learn the library from its DocC documentation, in
 `Sources/FlowErrorKit/Documentation.docc`: `Usage.md` for the overall
 workflow, `FlowError.md` for error actions, `FlowErrorHandler.md` for
 error handlers, and the doc comments of public declarations for the
-details. Rely on the public API only: never read the implementation,
-even to check a behavior.
+details.
+
+Rely on the public API only. Never read the implementation (the bodies
+of declarations, and non-public declarations), even to check a
+behavior, to find a working example, or when a doc comment points to
+the source code. When the documentation does not answer a question
+that your code depends on (a behavior is undocumented, or the
+documentation contradicts what you observe at runtime), stop and ask
+the user for permission to read the implementation, and name the files
+and the question. Read them only after the user approves, and only for
+that question.
 
 ## Each Swift error must be handled exactly once
 
@@ -22,6 +31,11 @@ identity, so:
 
 - Never create a `FlowError` in a view `body`. Bodies are re-evaluated,
   and views are recreated: the same Swift error would be handled again.
+- Never handle a flow error during a view update: in a view `body` or
+  initializer, or in the `update()` method of a `DynamicProperty`. The
+  side effects of error handlers may modify SwiftUI state, which SwiftUI
+  forbids during a view update. Handle errors anywhere else: a button
+  action, `.onAppear`, `.task`, etc.
 - Never store an `Error` (such as `Result<Value, Error>`) for views to
   read and turn into a `FlowError`. Models expose throwing methods, or
   deliver errors once through callbacks.
@@ -78,6 +92,11 @@ With `presentError($flowError, with: $errorPresentation)`:
 - To load a value that may fail, load from `.onAppear` with a guard so
   that it runs once, and catch there. Give the view some content before
   loading (`Color.clear`): `onAppear` does not run on an empty view.
+
+## Custom error presentation
+
+Implement a `FlowErrorPresenter` that follows the contract documented
+in the protocol, or implement a view that follows the same contract.
 
 ## Actions
 
