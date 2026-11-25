@@ -28,7 +28,7 @@ struct ErrorPresentationViewWithErrorActionsView: View {
     var body: some View {
         Group {
             if let errorPresentation {
-                ErrorPresentationView(errorPresentation, cancelButton: .visible)
+                ErrorPresentationView(errorPresentation, actions: .includingCancel)
             } else {
                 VStack {
                     EmojiView(emoji: emoji)
