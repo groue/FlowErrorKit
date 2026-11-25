@@ -25,6 +25,21 @@ struct CocoaErrorHandler: FlowErrorHandler {
                 flowError: flowError.droppingRetryAction(),
                 title: error.localizedDescription))
             
+        case .fileWriteOutOfSpace,
+                .fileWriteVolumeReadOnly,
+                .ubiquitousFileNotUploadedDueToQuota,
+                .ubiquitousFileUbiquityServerNotAvailable:
+            // These errors have a localized message that is meaningful to
+            // the user, whatever the failed operation, such as "The file
+            // couldn’t be saved because there isn’t enough space."
+            //
+            // Build the message from the error code only: the message of
+            // the error itself may contain file and folder names, which
+            // should not be shown to the user.
+            return .present(ErrorPresentation(
+                flowError: flowError,
+                title: CocoaError(error.code).localizedDescription))
+            
         default:
             // Present a generic redacted error, because most CocoaErrors
             // have an English or technical message that is not suitable for
