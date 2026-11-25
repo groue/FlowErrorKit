@@ -90,6 +90,16 @@ extension View {
     /// not modified: a previously presented error, if any, remains on
     /// screen, and is not replaced.
     ///
+    /// The presented flow error is not discarded when the view
+    /// disappears, because the presentation may come back on screen (for
+    /// example, when the user switches to another tab and back). When the
+    /// application knows that the user can no longer select any action,
+    /// it can discard the flow error, so that its cancel action runs:
+    ///
+    /// ```swift
+    /// errorPresentation?.flowError.discard(.presentationCancelled)
+    /// ```
+    ///
     /// - parameter flowError: A binding to an optional flow error.
     /// - parameter errorPresentation: A binding to an optional error
     ///   presentation. It is set when a flow error is presented, and

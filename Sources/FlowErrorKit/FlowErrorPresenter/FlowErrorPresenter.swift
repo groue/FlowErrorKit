@@ -46,10 +46,23 @@ import SwiftUI
 ///
 /// - When the presentation is dismissed, set the binding back to nil.
 ///
-/// - If the view disappears while a flow error is presented, and the
-///   presentation disappears with it, call ``FlowError/discard(_:)``
-///   with ``ErrorCancelReason/presentationCancelled``, and set the binding
-///   back to nil. For example, use `.onDisappear { ... }`.
+/// - When your code knows that the user can no longer select any action
+///   of a presented flow error, call ``FlowError/discard(_:)`` with
+///   ``ErrorCancelReason/presentationCancelled``, and set the binding
+///   back to nil.
+///
+///   The disappearance of a view does not tell this: when the user
+///   switches to another tab and back, an in-place presentation comes
+///   back on screen, and the user can still select an action. Do not
+///   discard it from `.onDisappear { ... }`. A `deinit` does not tell
+///   this either: your code does not control when it runs.
+///
+///   A presenter that can not tell when to discard a flow error may
+///   leave it unhandled forever. Such a presenter should document that
+///   the application can discard the flow error by calling
+///   ``FlowError/discard(_:)`` with
+///   ``ErrorCancelReason/presentationCancelled``, when the application
+///   knows that the user can no longer select any action.
 ///
 /// For working examples, see the source code of the built-in presenters,
 /// in the `AlertFlowErrorPresenter.swift` and
