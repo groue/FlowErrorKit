@@ -161,18 +161,20 @@ struct FormView: View {
 
 ### Sharing Handlers Between the App and Its Previews
 
-Application-wide error handlers are usually registered on the scene, with ``SwiftUI/Scene/handleError(with:)``, so that they apply to all windows. SwiftUI previews, however, do not run the `App` body, and do not use these handlers. For previews to present errors as the app does, the application-wide handlers can be declared once, in a ``FlowErrorHandlerChain`` built from the default chain:
+Application-wide error handlers are usually registered on the scene, with ``SwiftUI/Scene/handleError(with:)``, so that they apply to all windows. SwiftUI previews, however, do not run the `App` body, and do not use these handlers. For previews to present errors as the app does, the application-wide handlers can be declared once, in a ``FlowErrorHandlerChain``:
 
 ```swift
 extension FlowErrorHandler where Self == FlowErrorHandlerChain {
     static var appErrorHandlers: Self {
-        FlowErrorHandlerChain.default.prepending([
+        FlowErrorHandlerChain([
             MyErrorHandler(),
             CLErrorHandler(),
         ])
     }
 }
 ```
+
+The chain only contains the handlers of the application: the ready-made handling of `CancellationError`, `CocoaError`, and `URLError` provided by FlowErrorKit always comes last, after all registered handlers (see ``SwiftUICore/EnvironmentValues/errorHandler``).
 
 This chain is then registered in the app, and in every preview:
 
@@ -192,12 +194,6 @@ WindowGroup { RootView() }
 
 - ``handle(_:)-(FlowError)``
 - ``handle(_:)-(Error)``
-
-### Built-in Error Handlers
-
-- ``CancellationErrorHandler``
-- ``CocoaErrorHandler``
-- ``URLErrorHandler``
 
 ### Supporting Types
 

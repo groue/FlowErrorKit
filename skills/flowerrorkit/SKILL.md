@@ -247,7 +247,7 @@ With `presentError($flowError, with: $errorPresentation)`:
 Previews do not run the `App` body: handlers registered on the scene
 are missing from previews, which then present the errors that these
 handlers would have customized with the generic, redacted presentation
-of the default chain. Gather the application-wide handlers in a single
+of FlowErrorKit. Gather the application-wide handlers in a single
 chain, and register this same chain in the app and in every preview.
 
 - Declare the chain once, as a static member, so that call sites read
@@ -265,7 +265,7 @@ chain, and register this same chain in the app and in every preview.
       /// ContentView().handleError(with: .defaultErrorHandlers)
       /// ```
       static var defaultErrorHandlers: Self {
-          FlowErrorHandlerChain.default.prepending([
+          FlowErrorHandlerChain([
               APIErrorHandler(),
               CoreLocationErrorHandler(),
               NotImplementedErrorHandler(),

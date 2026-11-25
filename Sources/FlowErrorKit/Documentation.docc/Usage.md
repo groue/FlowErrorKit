@@ -142,7 +142,7 @@ There are other error presentation options, such as displaying an ``ErrorPresent
 
 ### Install flow error handlers for specific error handling
 
-The library comes with a default chain of error handlers (see ``FlowErrorHandlerChain/default``) that handles `CancellationError`, `CocoaError`, and `URLError`. Errors that are not handled by any error handler are presented with a generic, redacted, title. In the Debug configuration, the built-in presentations (alerts and ``ErrorPresentationView``) also display the raw error, so that developers can see what went wrong.
+FlowErrorKit comes with ready-made handling of `CancellationError`, `CocoaError`, and `URLError`, so that they are handled in the best way for the application user. Other errors are, by default, presented with a generic, localized, title: "An Error Occurred". In the Debug configuration, the built-in presentations (alerts and ``ErrorPresentationView``) also display the raw error, so that developers can see what went wrong.
 
 Below is a screenshot from the test app that shows the default presentation of an unhandled error when the library is compiled in the Debug configuration:
 

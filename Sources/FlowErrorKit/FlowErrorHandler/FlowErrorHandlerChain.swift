@@ -2,14 +2,23 @@ import Foundation
 
 /// A chain of flow error handlers.
 ///
-/// The chain of handlers that apply to a view is available in the
-/// ``SwiftUICore/EnvironmentValues/errorHandler`` environment value,
-/// which defaults to ``default``.
+/// A chain is itself a flow error handler, which lets you register
+/// several handlers at once:
 ///
-/// Several handlers can be registered at once, as a chain built with
-/// ``prepending(_:)``. This is how it is possible to register the same
-/// handlers in an app and in its previews: see
+/// ```swift
+/// ContentView()
+///     .handleError(with: FlowErrorHandlerChain([
+///         MyErrorHandler(),
+///         CLErrorHandler(),
+///     ]))
+/// ```
+///
+/// It is possible to register the same handlers in an app and in its
+/// previews: see
 /// <doc:FlowErrorHandler#Sharing-Handlers-Between-the-App-and-Its-Previews>.
+///
+/// The chain of handlers that apply to a view is available in the
+/// ``SwiftUICore/EnvironmentValues/errorHandler`` environment value.
 public struct FlowErrorHandlerChain: FlowErrorHandler {
     /// All handlers in the chain. The first element in the array is invoked
     /// first by `handle(_:)`.
@@ -17,17 +26,8 @@ public struct FlowErrorHandlerChain: FlowErrorHandler {
     
     /// Creates a chain of flow error handlers.
     ///
-    /// The first element in the `handlers` array is invoked
-    /// first by `handle(_:)`.
-    init(_ handlers: [any FlowErrorHandler] = []) {
-        self.handlers = handlers
-    }
-    
-    /// Returns a chain extended with flow error handlers.
-    ///
     /// The first element in the `handlers` array is invoked first by
-    /// ``handle(_:)``, and all of them are invoked before the handlers of
-    /// the extended chain.
+    /// ``handle(_:)``.
     ///
     /// The order of handlers matters when a handler passes a modified flow
     /// error to the next handlers. For example, an API client may throw a
@@ -47,15 +47,34 @@ public struct FlowErrorHandlerChain: FlowErrorHandler {
     ///     }
     /// }
     ///
-    /// // ClientErrorHandler comes first, so that ServerErrorHandler, and
-    /// // the URLErrorHandler of the default chain, can handle the
-    /// // unwrapped errors.
-    /// let chain = FlowErrorHandlerChain.default.prepending([
+    /// // ClientErrorHandler comes first, so that ServerErrorHandler can
+    /// // handle the unwrapped errors.
+    /// let chain = FlowErrorHandlerChain([
     ///     ClientErrorHandler(),
     ///     ServerErrorHandler(),
     /// ])
     /// ```
-    public func prepending(_ handlers: [any FlowErrorHandler]) -> Self {
+    ///
+    /// The chain of handlers in the SwiftUI environment always ends with
+    /// the ready-made handling of `CancellationError`, `CocoaError`, and
+    /// `URLError` provided by FlowErrorKit (see
+    /// ``SwiftUICore/EnvironmentValues/errorHandler``). In the above
+    /// example, FlowErrorKit handles the `URLError` unwrapped by
+    /// `ClientErrorHandler`.
+    ///
+    /// - parameter handlers: The handlers in the chain.
+    public init(_ handlers: [any FlowErrorHandler] = []) {
+        self.handlers = handlers
+    }
+
+    /// Returns a chain extended with flow error handlers.
+    ///
+    /// The first element in the `handlers` array is invoked first by
+    /// ``handle(_:)``, and all of them are invoked before the handlers of
+    /// the extended chain.
+    ///
+    /// - parameter handlers: The handlers to invoke first.
+    func prepending(_ handlers: [any FlowErrorHandler]) -> Self {
         FlowErrorHandlerChain(handlers + self.handlers)
     }
     
@@ -85,8 +104,9 @@ public struct FlowErrorHandlerChain: FlowErrorHandler {
 
 extension FlowErrorHandlerChain {
     /// The default chain handles `CancellationError`, `CocoaError`,
-    /// and `URLError`.
-    public static let `default` = FlowErrorHandlerChain([
+    /// and `URLError`. The chain of handlers in the SwiftUI environment
+    /// always ends with it.
+    static let `default` = FlowErrorHandlerChain([
         CocoaErrorHandler(),
         URLErrorHandler(),
         CancellationErrorHandler(),

@@ -273,12 +273,12 @@
         }
       }
     },
-    "Some errors represent user cancellation, and must not be presented. This is the case for `CocoaError(.userCancelled)`, handled by `CocoaErrorHandler`." : {
+    "Some errors represent user cancellation, and must not be presented. This is the case for `CocoaError(.userCancelled)`, handled by FlowErrorKit." : {
       "localizations" : {
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Certaines erreurs représentent une annulation déclenchée par l’utilisateur, et ne doivent pas être présentées. C’est le cas de `CocoaError(.userCancelled)`, gérée par `CocoaErrorHandler`."
+            "value" : "Certaines erreurs représentent une annulation déclenchée par l’utilisateur, et ne doivent pas être présentées. C’est le cas de `CocoaError(.userCancelled)`, gérée par FlowErrorKit."
           }
         }
       }

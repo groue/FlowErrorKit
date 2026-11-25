@@ -7,7 +7,9 @@ extension Scene {
     /// a view of the scene, including views in sheets and full screen
     /// covers. It is invoked after the handlers registered in the views
     /// with ``SwiftUICore/View/handleError(with:)``, and before the
-    /// default handlers (see ``FlowErrorHandlerChain/default``).
+    /// ready-made handling of `CancellationError`, `CocoaError`, and
+    /// `URLError` provided by FlowErrorKit (see
+    /// ``SwiftUICore/EnvironmentValues/errorHandler``).
     ///
     /// For example:
     ///

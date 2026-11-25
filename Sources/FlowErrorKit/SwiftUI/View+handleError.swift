@@ -11,8 +11,12 @@ extension EnvironmentValues {
     ///
     /// It is built from the flow error handlers registered with
     /// ``SwiftUICore/View/handleError(with:)`` and
-    /// ``SwiftUI/Scene/handleError(with:)``, followed by the default
-    /// handlers (see ``FlowErrorHandlerChain/default``).
+    /// ``SwiftUI/Scene/handleError(with:)``, followed by the ready-made
+    /// handling of `CancellationError`, `CocoaError`, and `URLError`
+    /// provided by FlowErrorKit.
+    ///
+    /// This ready-made handling comes last, so that the handlers you
+    /// register can customize the handling of those errors.
     ///
     /// You use `errorHandler` when you implement a custom
     /// ``FlowErrorPresenter``: see the documentation of this protocol.

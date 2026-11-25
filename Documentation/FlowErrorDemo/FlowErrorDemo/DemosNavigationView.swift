@@ -137,7 +137,7 @@ struct DemosNavigationView: View {
                     Some errors represent user cancellation, and \
                     must not be presented. This is the case for \
                     `CocoaError(.userCancelled)`, handled by \
-                    `CocoaErrorHandler`.
+                    FlowErrorKit.
                     """
             )
         }
