@@ -191,7 +191,6 @@ import UIKit
 struct CLErrorHandler: FlowErrorHandler {
     func handle(_ flowError: FlowError) -> FlowErrorHandling {
         guard let error = flowError.error as? CLError else {
-            // Not a CLError: pass to the next error handler.
             return .pass(flowError)
         }
         

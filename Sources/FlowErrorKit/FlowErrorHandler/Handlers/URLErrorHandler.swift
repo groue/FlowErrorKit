@@ -4,7 +4,6 @@ import Foundation
 struct URLErrorHandler: FlowErrorHandler {
     func handle(_ flowError: FlowError) -> FlowErrorHandling {
         guard let error = flowError.error as? URLError else {
-            // Not a URLError: pass to the next error handler.
             return .pass(flowError)
         }
         

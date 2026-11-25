@@ -3,7 +3,6 @@ import FlowErrorKit
 struct FrobnicateErrorHandler: FlowErrorHandler {
     func handle(_ flowError: FlowError) -> FlowErrorHandling {
         guard let frobnicateError = flowError.error as? FrobnicateError else {
-            // Not a FrobnicateError: pass to the next error handler.
             return .pass(flowError)
         }
         

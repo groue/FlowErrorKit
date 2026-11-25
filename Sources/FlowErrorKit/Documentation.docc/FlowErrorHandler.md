@@ -18,7 +18,6 @@ struct MyErrorHandler: FlowErrorHandler {
                 flowError: flowError,
                 title: "My Error Occurred"))
         } else {
-            // Not MyError: pass to the next error handler.
             return .pass(flowError)
         }
     }
@@ -109,7 +108,6 @@ extension Session: FlowErrorHandler {
             isSignedIn = false
             return .cancel
         } else {
-            // Not an UnauthorizedError: pass to the next error handler.
             return .pass(flowError)
         }
     }

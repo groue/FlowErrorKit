@@ -32,7 +32,6 @@
     /// struct CocoaErrorHandler: FlowErrorHandler {
     ///     func handle(_ flowError: FlowError) -> FlowErrorHandling {
     ///         guard let error = flowError.error as? CocoaError else {
-    ///             // Not a CocoaError: pass to the next error handler.
     ///             return .pass(flowError)
     ///         }
     ///
@@ -74,7 +73,6 @@
     /// struct CLErrorHandler: FlowErrorHandler {
     ///     func handle(_ flowError: FlowError) -> FlowErrorHandling {
     ///         guard let error = flowError.error as? CLError else {
-    ///             // Not a CLError: pass to the next error handler.
     ///             return .pass(flowError)
     ///         }
     ///
@@ -118,7 +116,6 @@
     /// struct AFErrorHandler: FlowErrorHandler {
     ///     func handle(_ flowError: FlowError) -> FlowErrorHandling {
     ///         guard let error = flowError.error as? AFError else {
-    ///             // Not an AFError: pass to the next error handler.
     ///             return .pass(flowError)
     ///         }
     ///

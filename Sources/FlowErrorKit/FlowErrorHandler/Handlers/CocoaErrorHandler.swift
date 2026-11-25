@@ -4,7 +4,6 @@ import Foundation
 struct CocoaErrorHandler: FlowErrorHandler {
     func handle(_ flowError: FlowError) -> FlowErrorHandling {
         guard let error = flowError.error as? CocoaError else {
-            // Not a CocoaError: pass to the next error handler.
             return .pass(flowError)
         }
         

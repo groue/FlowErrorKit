@@ -77,7 +77,6 @@ extension View {
     ///                 flowError: flowError,
     ///                 title: "My Error Occurred"))
     ///         } else {
-    ///             // Not MyError: pass to the next error handler.
     ///             return .pass(flowError)
     ///         }
     ///     }
@@ -116,7 +115,6 @@ extension View {
     ///                         flowError: flowError,
     ///                         title: "My Error Occurred"))
     ///                 } else {
-    ///                     // Not MyError: pass to the next error handler.
     ///                     return .pass(flowError)
     ///                 }
     ///             }
