@@ -32,7 +32,7 @@ when the rule alone does not settle a case it does not mention.
   `Error` (such as `Result<Value, Error>`) for views to read and turn
   into a `FlowError`. Models expose throwing methods, or deliver errors
   once through callbacks.
-- To display a flow error again, keep the `FlowError` instance (for example, in a SwifUI-managed storage like `@State`). Never
+- To display a flow error again, keep the `FlowError` instance (for example, in a SwiftUI-managed storage like `@State`). Never
   wrap its `error` in a new `FlowError(error:)`.
 - Handle each flow error once: either present it with
   `presentError(_:with:)`, or pass it to `errorHandler.handle(_:)`
