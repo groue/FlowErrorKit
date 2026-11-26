@@ -26,7 +26,8 @@ let package = Package(
                 .product(name: "IssueReporting", package: "swift-issue-reporting"),
             ],
             resources: [
-                .process("Resources")
+                .copy("PrivacyInfo.xcprivacy"),
+                .process("Resources"),
             ],
         ),
         .testTarget(
