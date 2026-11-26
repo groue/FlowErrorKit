@@ -153,8 +153,9 @@ struct ErrorPresentationContent<Footer: View> {
         var body: some View {
             VStack(spacing: spacing) {
                 if let subtitle {
+                    // Distinguish the subtitle from the text below.
                     Text(subtitle)
-                        .fontWeight(.semibold)
+                        .fontWeight(hasTextBelowSubtitle ? .semibold : nil)
                 }
                 if let message {
                     Text(message)
@@ -163,6 +164,14 @@ struct ErrorPresentationContent<Footer: View> {
                 Text(verbatim: "DEBUG: \(error)")
 #endif
             }
+        }
+
+        private var hasTextBelowSubtitle: Bool {
+#if DEBUG
+            true
+#else
+            message != nil
+#endif
         }
     }
     
