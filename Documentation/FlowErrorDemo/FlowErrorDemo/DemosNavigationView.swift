@@ -217,26 +217,30 @@ struct DemosNavigationView: View {
     var multipleExecutionError: some View {
         Section {
             Group {
-                NavigationLink("Multiple Actions") {
+                NavigationLink("Multiple Actions Disabled") {
                     ErrorPresentationViewWithErrorActionsView(
                         error: CLError(.denied),
+                        allowMultipleActionExecutions: false,
                         failureProbability: 1)
-                        .navigationTitle("Multiple Actions")
+                        .navigationTitle("Multiple Actions Disabled")
+                }
+                NavigationLink("Multiple Actions Enabled") {
+                    ErrorPresentationViewWithErrorActionsView(
+                        error: CLError(.denied),
+                        allowMultipleActionExecutions: true,
+                        failureProbability: 1)
+                        .navigationTitle("Multiple Actions Enabled")
                 }
             }
         } header: {
             sectionHeader(
-                title: "Multiple Actions Warning",
+                title: "Multiple Actions",
                 description: """
-                    `ErrorPresentationView` can lead the user to select \
-                    an action multiple times. In this demo, you can hit \
-                    the "Open Settings" button multiple times. Notice how \
-                    a runtime warning \
-                    \(Image(systemName: "exclamationmark.triangle.fill")) \
-                    is triggered when you hit this button more than once. \
-                    The warning suggests that we use the \
-                    `allowMultipleActionExecutions` flag when creating \
-                    the `FlowError`.
+                    `ErrorPresentationView` remains on screen after the \
+                    user selects an action. Hit "Open Settings", and come \
+                    back: the buttons are disabled, unless the \
+                    `FlowError` is created with the \
+                    `allowMultipleActionExecutions` flag.
                     """
             )
         }

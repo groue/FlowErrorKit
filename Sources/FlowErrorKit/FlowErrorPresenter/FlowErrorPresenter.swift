@@ -10,21 +10,20 @@ import SwiftUI
 ///
 /// ## Implementing a custom presenter
 ///
-/// The view modifier of a custom presenter receives a binding to an
-/// optional flow error. It must uphold the guarantee that exactly one
-/// action of a presented flow error is performed (see
+/// The view modifier of a presenter receives a binding to an optional
+/// flow error. The presenter is responsible for letting the user perform
+/// the actions of the flow error, and, whenever possible, for never
+/// leaving a flow error unattended (see
 /// <doc:FlowError#Detailed-Actions-Handling>). To do so:
 ///
 /// - Read the chain of flow error handlers from the SwiftUI environment,
-///   with `@Environment(\.errorHandler)`.
+///   with `@Environment(\.errorHandler)`. Whenever the bound flow error
+///   changes, including when the view appears, call
+///   ``FlowErrorHandler/handle(_:)-(FlowError)`` on the chain. For
+///   example, use `.onChange(of: flowError?.id, initial: true) { ... }`.
 ///
-/// - Whenever the bound flow error changes, including when the view
-///   appears, call ``FlowErrorHandler/handle(_:)-(FlowError)`` on the
-///   chain. For example, use
-///   `.onChange(of: flowError?.id, initial: true) { ... }`.
-///
-/// - If the result has no ``FlowErrorHandling/errorPresentation``
-///   (the handler returned ``FlowErrorHandling/cancel``), call
+/// - If a handler cancels the presentation (the result has no
+///   ``FlowErrorHandling/errorPresentation``), call
 ///   ``FlowError/discard(_:)`` with
 ///   ``ErrorCancelReason/presentationCancelled``, and set the binding
 ///   back to nil, unless another flow error is currently presented.
@@ -34,33 +33,36 @@ import SwiftUI
 ///   ``FlowError/performCancelAction()``. Never call the action
 ///   closures in any other way.
 ///
+///   Perform a single action, unless the flow error was created with the
+///   `allowMultipleActionExecutions` flag. If the user can select an
+///   action after another one, for example because the presentation
+///   remains on screen, rely on ``FlowError/canPerformAction`` to prevent
+///   it.
+///
 /// - If a new flow error is set while another one is presented, either
 ///   replace the presented one, or ignore the new one. In both cases,
-///   call ``FlowError/discard(_:)`` with
-///   ``ErrorCancelReason/presentationCancelled`` on the flow error that
-///   is not presented.
+///   discard the flow error that is not presented, with
+///   ``ErrorCancelReason/presentationCancelled``.
 ///
 /// - If the binding is set to nil while a flow error is presented, remove
-///   the presentation from the screen, without performing any action
-///   (see <doc:FlowError#Detailed-Actions-Handling>).
+///   the presentation, without performing any action. When the
+///   presentation is dismissed, set the binding back to nil.
 ///
-/// - When the presentation is dismissed, set the binding back to nil.
+/// - When the user can no longer select any action of a presented flow
+///   error, discard it with ``ErrorCancelReason/presentationCancelled``,
+///   and set the binding back to nil. Only do so when the presenter can
+///   tell it deterministically:
 ///
-/// - When your code knows that the user can no longer select any action
-///   of a presented flow error, call ``FlowError/discard(_:)`` with
-///   ``ErrorCancelReason/presentationCancelled``, and set the binding
-///   back to nil.
+///   - The disappearance of a view does not tell it: when the user
+///     switches to another tab and back, an in-place presentation comes
+///     back on screen, and the user can still select an action. Do not
+///     discard the flow error from `.onDisappear { ... }`.
+///   - A `deinit` does not tell it either: your code does not control
+///     when it runs.
 ///
-///   The disappearance of a view does not tell this: when the user
-///   switches to another tab and back, an in-place presentation comes
-///   back on screen, and the user can still select an action. Do not
-///   discard it from `.onDisappear { ... }`. A `deinit` does not tell
-///   this either: your code does not control when it runs.
-///
-///   A presenter that can not tell when to discard a flow error may
-///   leave it unhandled forever. Such a presenter should document that
-///   the application can discard the flow error by calling
-///   ``FlowError/discard(_:)`` with
+///   A presenter that can not tell when to discard a flow error should
+///   document that the application can discard it, with
+///   ``FlowError/discard(_:)`` and
 ///   ``ErrorCancelReason/presentationCancelled``, when the application
 ///   knows that the user can no longer select any action.
 ///

@@ -66,7 +66,7 @@ struct ConflictingErrorPresentationsView: View {
             Divider()
             
             if let errorPresentation {
-                ErrorPresentationView(errorPresentation, actions: .includingCancel, footer: {
+                ErrorPresentationView(errorPresentation, cancelButton: .visible, footer: {
                     errorButtons()
                 })
             } else {

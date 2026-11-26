@@ -72,13 +72,10 @@ extension View {
     /// it by setting `flowError` to nil (for example, when a retried
     /// action succeeds), as in the sample code above.
     ///
-    /// When an application does not set `flowError` to nil and the error
-    /// presentation remains on screen, the user may select an error
-    /// action several times. For example, the user may come back from an
-    /// "Open Settings" action, and select it again. In this case, the flow
-    /// error should be created with `allowMultipleActionExecutions`.
-    /// Otherwise, a test failure is reported when an action is performed
-    /// more than once (see ``FlowError/performAction(_:)``).
+    /// Once the user has selected an action, the ``ErrorPresentationView``
+    /// disables its buttons. To let the user select an action again (for
+    /// example, after coming back from "Open Settings"), create the flow
+    /// error with `allowMultipleActionExecutions`.
     ///
     /// If a new flow error is set while a previous one is presented, the
     /// new error replaces the previous one, and the cancel action of the

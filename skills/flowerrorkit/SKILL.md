@@ -1,72 +1,91 @@
 ---
 name: flowerrorkit
-description: Rules and pitfalls for SwiftUI code that uses FlowErrorKit (FlowError, ErrorPresentation, ErrorPresentationView, FlowErrorHandler, presentError, handleError, errorHandler, onCancel, onRetry, finally, appendingAction). Load before catching or presenting errors in SwiftUI views, writing or registering flow error handlers (including in the App and in #Preview), writing error actions, or writing error titles and messages.
+description: Rules and pitfalls for SwiftUI code that uses FlowErrorKit (FlowError, ErrorPresentation, ErrorPresentationView, FlowErrorHandler, FlowErrorPresenter, presentError, handleError, errorHandler, onCancel, onRetry, finally, appendingAction, allowMultipleActionExecutions, canPerformAction). Load before catching or presenting errors in SwiftUI views, writing or registering flow error handlers (including in the App and in #Preview), writing error actions, or writing error titles and messages.
 ---
 
 # FlowErrorKit
 
-Learn the library from its DocC documentation, in
-`Sources/FlowErrorKit/Documentation.docc`: `Usage.md` for the overall
-workflow, `FlowError.md` for error actions, `FlowErrorHandler.md` for
-error handlers, and the doc comments of public declarations for the
-details.
+Each section lists rules first. A "Why:" line explains a rule only
+when the rule alone does not settle a case it does not mention.
 
-Rely on the public API only. Never read the implementation (the bodies
-of declarations, and non-public declarations), even to check a
-behavior, to find a working example, or when a doc comment points to
-the source code. When the documentation does not answer a question
-that your code depends on (a behavior is undocumented, or the
-documentation contradicts what you observe at runtime), stop and ask
-the user for permission to read the implementation, and name the files
-and the question. Read them only after the user approves, and only for
-that question.
+- Learn the library from its DocC documentation, in
+  `Sources/FlowErrorKit/Documentation.docc`: `Usage.md` for the overall
+  workflow, `FlowError.md` for error actions, `FlowErrorHandler.md` for
+  error handlers, and the doc comments of public declarations for the
+  details.
+- Rely on the public API only. Never read the implementation (the
+  bodies of declarations, and non-public declarations), even to check a
+  behavior, to find a working example, or when a doc comment points to
+  the source code.
+- When the documentation does not answer a question that your code
+  depends on (a behavior is undocumented, or the documentation
+  contradicts what you observe at runtime), stop and ask the user for
+  permission to read the implementation, and name the files and the
+  question. Read them only after the user approves, and only for that
+  question.
 
-## Each Swift error must be handled exactly once
+## Creating and handling flow errors
 
-Handling a flow error with `presentError(_:with:)` or
-`EnvironmentValues.errorHandler.handle(_:)` runs the side effects of the
-environment error handlers (sign out, etc.), and `FlowError.id` is the
-identity of the error. Every `FlowError(error:)` call creates a new
-identity, so:
-
-- Never create a `FlowError` in a view `body`. Bodies are re-evaluated,
-  and views are recreated: the same Swift error would be handled again.
-- Never handle a flow error during a view update: in a view `body` or
-  initializer, or in the `update()` method of a `DynamicProperty`. The
-  side effects of error handlers may modify SwiftUI state, which SwiftUI
-  forbids during a view update. Handle errors anywhere else: a button
-  action, `.onAppear`, `.task`, etc.
-- Never store an `Error` (such as `Result<Value, Error>`) for views to
-  read and turn into a `FlowError`. Models expose throwing methods, or
-  deliver errors once through callbacks.
 - Create the `FlowError` where the error is delivered: a `catch` clause,
   or a one-off callback (`onError:`, `.onReceive`, `fileImporter`…).
-- An error passed to `_ = errorHandler.handle(error)` is handled: do not
-  present it as well with `presentError(_:with:)`.
+- Never create a `FlowError` in a view `body`, and never store an
+  `Error` (such as `Result<Value, Error>`) for views to read and turn
+  into a `FlowError`. Models expose throwing methods, or deliver errors
+  once through callbacks.
+- To display a flow error again, keep the `FlowError` instance (for example, in a SwifUI-managed storage like `@State`). Never
+  wrap its `error` in a new `FlowError(error:)`.
+- Handle each flow error once: either present it with
+  `presentError(_:with:)`, or pass it to `errorHandler.handle(_:)`
+  (with `@Environment(\.errorHandler) private var errorHandler`), never
+  both.
+- Never handle a flow error during a view update: in a view `body` or
+  initializer, or in the `update()` method of a `DynamicProperty`.
+  Handle it in a button action, `.onAppear`, `.task`, etc.
+
+  Why: the side effects of error handlers may modify SwiftUI state,
+  which SwiftUI forbids during a view update.
+
+Why: a `FlowError` is an event. An error was caught, the error handlers
+must handle it once (and run their side effects, such as signing out),
+and the user must select one of its actions once. The identity of the
+flow error (`FlowError.id`) tracks both:
+
+- Flow errors derived with `onRetry`, `withTitle`, `appendingAction`,
+  etc., including in error handlers, share this identity.
+- Every `FlowError(error:)` call creates a new identity, with fresh
+  actions. Bodies are re-evaluated, and views are recreated: a flow
+  error created there, or from a stored `Error`, would be handled
+  again, and would offer again actions whose closures have already run.
+- Once the user has selected an action, or the flow error was discarded
+  (`flowError.discard(_:)`), `flowError.canPerformAction` is false, and
+  presentations disable or hide the action buttons.
 
 ## In-place presentation
 
-Unlike an alert, which floats above the screen, an in-place presentation
-displays the error in the view itself, as an `ErrorPresentationView`
-(for example in place of content that could not be loaded).
+An in-place presentation displays the error in the view itself, as an
+`ErrorPresentationView` (for example in place of content that could not
+be loaded). Unlike an alert, it does not go away when the user selects
+an action.
 
-With `presentError($flowError, with: $errorPresentation)`:
+With `presentError($flowError, with: $errorPresentation)`, display
+`errorPresentation` in an `ErrorPresentationView`, and:
 
-- When a handler cancels the presentation, `errorPresentation` stays
-  nil, and `onCancel` has already run, with `.presentationCancelled`. If an error state must
-  still be displayed, keep the `FlowError` you created and display
-  `ErrorPresentationView(ErrorPresentation(flowError: kept), actions: .hidden)`.
-  Its actions are spent, hence `.hidden`.
+- A handler may cancel the presentation, and then `errorPresentation`
+  stays nil. Use `presentError(_:with:)` only when the view has
+  something to display in this case, such as its regular content.
+  Otherwise, present the error yourself (see below).
 - After the user selects an action, the `ErrorPresentationView` remains
-  on screen, with its buttons, until your code dismisses the screen, or
-  clears or replaces the flow error. When an action may not do any of
-  this (for example "Open Settings", appended by a handler), create the
-  flow error with `allowMultipleActionExecutions: true`, so that the
-  user can select an action again. With this flag, the closures of `onRetry`, `onCancel`,
-  `finally`, and `appendingAction` may run several times: do not write
-  them as if they ran once.
-
-  Only consider the actions that can actually be presented: those added
+  on screen, with disabled buttons. Make sure that every action that
+  can be presented dismisses the screen, or clears or replaces the flow
+  error binding (`flowError = nil`, or `flowError = FlowError(error:
+  newError)`). Otherwise (for example "Open Settings", appended by a
+  handler), create the flow error with
+  `allowMultipleActionExecutions: true`, so that the buttons remain
+  enabled, and the user can select an action again.
+- With `allowMultipleActionExecutions: true`, write the closures of
+  `onRetry`, `onCancel`, `finally`, and `appendingAction` so that they
+  can run several times.
+- Only consider the actions that can actually be presented: those added
   by the catch site, and those that the error handlers in scope append
   to the errors that the failed operation can actually throw. For
   example, a handler that appends "Open Settings" to `CLError.denied`
@@ -79,8 +98,8 @@ With `presentError($flowError, with: $errorPresentation)`:
   flowError = FlowError(error: error, allowMultipleActionExecutions: true)
       .onRetry { Task { await load() } }
 
-  // BAD: back from Settings, selecting "Open Settings" again reports
-  // an issue.
+  // BAD: back from Settings, the buttons are disabled, and the user
+  // is stuck.
   flowError = FlowError(error: error)
       .onRetry { Task { await load() } }
 
@@ -93,27 +112,64 @@ With `presentError($flowError, with: $errorPresentation)`:
   that it runs once, and catch there. Give the view some content before
   loading (`Color.clear`): `onAppear` does not run on an empty view.
 
+When the view has nothing to display if a handler cancels the
+presentation, present the error yourself. The rules above about actions
+still apply, and the view follows the presenter contract (see Custom
+error presentation):
+
+- In the catch clause, call `errorHandler.handle(flowError)`, and
+  display the returned `errorPresentation` in an
+  `ErrorPresentationView`.
+- When the result has no `errorPresentation` (a handler cancelled the
+  presentation), call `flowError.discard(.presentationCancelled)`, then
+  display `ErrorPresentation(flowError: flowError)`.
+- Before replacing or removing a displayed error presentation, call
+  `errorPresentation.flowError.discard(.presentationCancelled)`.
+
 ## Custom error presentation
 
 Implement a `FlowErrorPresenter` that follows the contract documented
-in the protocol, or implement a view that follows the same contract.
+in the protocol, or a view that follows the same contract. In summary:
+
+- Perform the actions of a flow error with
+  `flowError.performAction(action)` or `flowError.performCancelAction()`,
+  and only once, unless the flow error was created with
+  `allowMultipleActionExecutions: true`. `flowError.canPerformAction`
+  tells whether an action can still be performed.
+- Discard the flow errors whose presentation is cancelled by a handler,
+  with `flowError.discard(.presentationCancelled)`.
+- Discard a pending flow error, with
+  `flowError.discard(.presentationCancelled)`, when the user can no
+  longer select any of its actions, but only when the presenter can
+  tell it deterministically. Never discard it from `.onDisappear`, nor
+  from a `deinit`.
+
+  Why: when the user switches to another tab and back, an in-place
+  presentation comes back on screen, and the user can still select an
+  action. Your code does not control when a `deinit` runs.
+- Expect a new flow error while another one is presented, and decide
+  what to do in a way that follows the rules above.
+
+Why: a presenter lets the user perform the actions of a flow error,
+and, whenever possible, never leaves a flow error unattended.
 
 ## Actions
 
-- `FlowError(error: error).onCancel { reason in ... }` does not only run
-  when the user taps a Cancel button. Its closure runs with one of
-  these reasons:
+- Choose between `finally`, `onCancel`, `onRetry`, and the closure of an
+  action according to the outcomes that must run your code. Switch on
+  the cancel reason when outcomes need different behaviors.
+
+  Why: `onCancel { reason in ... }` does not only run when the user
+  taps a Cancel button. Its closure runs with one of these reasons:
   - `.userCancelled`: the user tapped Cancel. In-place presentations
     hide this button by default.
   - `.presentationCancelled`: a handler returned `.cancel`, or the
-    error was replaced or discarded.
+    error was replaced or discarded, by a presenter or by your code.
   - `.supplementaryActionPerformed`: the user selected an action added
     with `appendingAction`, including actions appended by handlers.
     `onCancel` runs first, then the action.
-- `finally { ... }` runs after all of the above, and after `onRetry`.
-- Choose between `finally`, `onCancel`, `onRetry`, and the closure of an
-  action according to the outcomes that must run your code. Switch on the
-  reason when outcomes need different behaviors.
+
+  `finally { ... }` runs after all of the above, and after `onRetry`.
 
   ```swift
   // Intent: dismiss whatever happens to the error.
@@ -167,6 +223,9 @@ in the protocol, or implement a view that follows the same contract.
       }
   ```
 
+- You can assume that action closures run at most once, unless the
+  flow error was created with `allowMultipleActionExecutions: true`
+  (see In-place presentation).
 - Add an `onRetry` action at the catch site when:
   - The user can't retry otherwise: the screen offers no way to run
     the failed operation again.
@@ -188,18 +247,21 @@ in the protocol, or implement a view that follows the same contract.
   }
   ```
 
-  Add `onRetry` whatever the error: error handlers remove it when
-  retrying can't help (see Handlers).
+- When the previous rule calls for `onRetry`, add it without checking
+  the nature of the error: error handlers remove it, with
+  `droppingRetryAction()`, when retrying can't help (see Handlers).
 
 ## Handlers
 
-- A handler only sees the error; the catch site knows the operation.
-  Put each action where its decision is made:
+- Put each action where its decision is made:
   - Error handlers add or remove actions that depend on the kind of
     error: append "Open Settings" for `CLError.denied`, drop the retry
     action for errors that retrying can't fix.
   - Catch sites add actions that depend on the failed operation:
     `onRetry`, or "Delete Document" after loading that document failed.
+
+  Why: a handler only sees the error; the catch site knows the
+  operation.
 
   ```swift
   // GOOD: "Open Settings" fixes CLError.denied, whatever the operation
@@ -256,6 +318,12 @@ in the protocol, or implement a view that follows the same contract.
   to filter (comparing flow error ids, inspecting view state) are
   fragile workarounds.
 
+- In a handler, derive flow errors from the flow error it receives
+  (`.droppingRetryAction()`, `.appendingAction(...)`, etc.). Never
+  create a new `FlowError` in a handler.
+
+  Why: a new flow error loses the identity of the caught error (see
+  Creating and handling flow errors).
 - When a handler appends an action, or starts handling more errors,
   review the in-place presentations that may now display the action,
   and set `allowMultipleActionExecutions` where needed (see In-place
@@ -263,11 +331,8 @@ in the protocol, or implement a view that follows the same contract.
 
 ## Sharing handlers between the app and its previews
 
-Previews do not run the `App` body: handlers registered on the scene
-are missing from previews, which then present the errors that these
-handlers would have customized with the generic, redacted presentation
-of FlowErrorKit. Gather the application-wide handlers in a single
-chain, and register this same chain in the app and in every preview.
+Gather the application-wide handlers in a single chain, and register
+this same chain in the app and in every preview:
 
 - Declare the chain once, as a static member, so that call sites read
   `.handleError(with: .defaultErrorHandlers)`:
@@ -320,31 +385,47 @@ chain, and register this same chain in the app and in every preview.
   }
   ```
 
+Why: previews do not run the `App` body. Without the shared chain,
+handlers registered on the scene are missing from previews, which then
+present the errors that these handlers would have customized with the
+generic, redacted presentation of FlowErrorKit.
+
 ## Error texts
 
 - At the catch site, give the flow error a title that names the failed
   operation (`.withTitle("The message could not be sent")`), unless the
   end user can't miss which operation has failed on this screen.
 
-  The reason is that the end user should know which operation has
-  failed, and why. Error handlers see the error, so they can explain
-  why, with the title and message of the error presentation they
-  return. But they do not know the failed operation: only the catch
-  site does. When both provide a title, the title of the flow error is
-  displayed first, and the title of the handler below it.
-- Built-in presentations display the raw error in DEBUG builds: do not
-  append debug details to titles or messages.
-- String literals are localized and extracted to the string catalog: no
-  `String(localized:)` nor `NSLocalizedString`.
-- Literals resolve to SwiftUI's `LocalizedStringKey`: with the
-  `MemberImportVisibility` upcoming feature, the file must
-  `import SwiftUI`.
-- `String` variables are displayed verbatim (like `Text`), such as
-  server messages, which may already be localized.
-- Never write `message ?? "Unknown user"`: the literal becomes a
-  `String`, and is not localized. Branch instead, so that each value
-  goes to the matching overload, and comment both branches so that
-  nobody refactors them into `??`:
+  Why: the end user should know which operation has failed, and why.
+  Error handlers see the error, so they can explain why, with the title
+  and message of the error presentation they return. But they do not
+  know the failed operation: only the catch site does. When both
+  provide a title, the title of the flow error is displayed first, and
+  the title of the handler below it.
+- Do not append debug details to titles or messages.
+
+  Why: built-in presentations display the raw error in DEBUG builds.
+- In the app target, write titles and messages as string literals.
+  Never use `String(localized:)` nor `NSLocalizedString`.
+
+  Why: string literals are localized and extracted to the string
+  catalog of the app.
+- In a Swift package, pass a `LocalizedStringResource` that is looked
+  up in the bundle of the package. Create it according to the
+  localization conventions of the package, or of the packages around
+  it.
+
+  Why: string literals are looked up in the main bundle, not in the
+  bundle of the package (`Bundle.module`).
+- In files that pass literals, `import SwiftUI`.
+
+  Why: literals resolve to SwiftUI's `LocalizedStringKey`, which needs
+  the import with the `MemberImportVisibility` upcoming feature.
+- Pass `String` variables, such as server messages that may already be
+  localized, when the text must be displayed verbatim (like `Text`).
+- Never write `message ?? "Unknown user"`. Branch instead, so that each
+  value goes to the matching overload, and comment both branches so
+  that nobody refactors them into `??`:
 
   ```swift
   if let message {
@@ -356,3 +437,5 @@ chain, and register this same chain in the app and in every preview.
 
   Only comment this contrast. A `String` variable passed on its own
   needs no comment.
+
+  Why: with `??`, the literal becomes a `String`, and is not localized.

@@ -158,6 +158,7 @@ FlowError(error: error).withTitle(serverMessage)     // verbatim
 - ``performAction(_:)``
 - ``performCancelAction()``
 - ``discard(_:)``
+- ``canPerformAction``
 
 ### Transforming flow errors
 

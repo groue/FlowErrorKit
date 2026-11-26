@@ -1,8 +1,15 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "`ErrorPresentationView` can lead the user to select an action multiple times. In this demo, you can hit the \"Open Settings\" button multiple times. Notice how a runtime warning %@ is triggered when you hit this button more than once. The warning suggests that we use the `allowMultipleActionExecutions` flag when creating the `FlowError`." : {
-
+    "`ErrorPresentationView` remains on screen after the user selects an action. Hit \"Open Settings\", and come back: the buttons are disabled, unless the `FlowError` is created with the `allowMultipleActionExecutions` flag." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "`ErrorPresentationView` reste à l’écran une fois qu’une action a été choisie. Touchez « Ouvrir les réglages », puis revenez : les boutons sont désactivés, sauf si la `FlowError` est créée avec l’option `allowMultipleActionExecutions`."
+          }
+        }
+      }
     },
     "Add a Retry button if desired, and execute custom code when the user cancels the error." : {
       "localizations" : {
@@ -173,12 +180,22 @@
         }
       }
     },
-    "Multiple Actions Warning" : {
+    "Multiple Actions Disabled" : {
       "localizations" : {
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Avertissement sur actions multiples"
+            "value" : "Actions multiples désactivées"
+          }
+        }
+      }
+    },
+    "Multiple Actions Enabled" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actions multiples activées"
           }
         }
       }

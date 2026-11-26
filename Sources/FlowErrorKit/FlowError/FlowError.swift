@@ -1,91 +1,10 @@
 import Foundation
 import IssueReporting
+import Observation
 import SwiftUI
-import Synchronization
 
 // See documentation in FlowError.md.
 @MainActor public struct FlowError: Identifiable {
-    /// An execution token helps a `FlowError` make sure that at most one error
-    /// action is run.
-    @MainActor private class ExecutionToken: CustomStringConvertible {
-        // Mutex is only used for nonisolated CustomStringConvertible conformance.
-        private let isExecutedMutex = Mutex(false)
-        private let allowMultipleActionExecutions: Bool
-        
-        nonisolated var description: String {
-            isExecutedMutex.withLock { isExecuted in
-                "<\(ObjectIdentifier(self)) executed: \(isExecuted)>"
-            }
-        }
-        
-        init(allowMultipleActionExecutions: Bool) {
-            self.allowMultipleActionExecutions = allowMultipleActionExecutions
-        }
-        
-        /// Executes the provided closure.
-        func execute(_ action: () -> Void) {
-            isExecutedMutex.withLock { isExecuted in
-                if isExecuted && allowMultipleActionExecutions == false {
-                    reportIssue("""
-                        Multiple FlowError actions executed.
-                        
-                        This might be unexpected by the code that created the \
-                        FlowError in the first place.
-                        
-                        To fix this, either update the user interface so that \
-                        a single action is executed, or set the \
-                        allowMultipleActionExecutions flag when the FlowError \
-                        is created.
-                        
-                        For example, present the flow error with an alert:
-                        
-                          // Presenting the error with an alert guarantees
-                          // single action execution
-                          ContentView().presentError($flowError, with: .alert)
-                        
-                        Alternatively:
-                        
-                          // Declare that action closures can be executed
-                          // multiple times
-                          flowError = FlowError(
-                            error: error,
-                            allowMultipleActionExecutions: true)
-                          .onCancel { _ in /* may be executed multiple times */ }
-                          .onRetry { /* may be executed multiple times */ }
-                          .finally { /* may be executed multiple times */ }
-                        """)
-                }
-                
-                isExecuted = true
-            }
-            
-            action()
-        }
-        
-        /// Executes the provided closure unless an action was already
-        /// performed.
-        ///
-        /// - Returns: Whether the closure was executed.
-        @discardableResult
-        func executeUnlessExecuted(_ action: () -> Void) -> Bool {
-            let shouldRun = isExecutedMutex.withLock { isExecuted in
-                if isExecuted {
-                    return false
-                } else {
-                    isExecuted = true
-                    return true
-                }
-            }
-            
-            if shouldRun {
-                action()
-                return true
-            } else {
-                return false
-            }
-        }
-    }
-    
     @MainActor private struct CancelAction {
         var title: TextSource?
         private var action: @MainActor (ErrorCancelReason) -> Void
@@ -166,6 +85,19 @@ import Synchronization
     /// A closure to run at the end of all error actions.
     private(set) var finally: (@MainActor () -> Void)?
     
+    /// A Boolean value indicating whether an error action can be
+    /// performed.
+    ///
+    /// It becomes false once an action is performed, or once the flow
+    /// error is discarded, unless the flow error was created with the
+    /// `allowMultipleActionExecutions` flag.
+    ///
+    /// This property is observable. ``ErrorPresentationView`` uses it to
+    /// disable its buttons.
+    public var canPerformAction: Bool {
+        executionToken.canExecute
+    }
+    
     /// `executionToken` makes sure at most one error action is run.
     ///
     /// The same token is shared between one `FlowError` instance and all
@@ -238,7 +170,76 @@ import Synchronization
 
 extension FlowError: CustomStringConvertible {
     nonisolated public var description: String {
-        "<FlowError id: \(executionToken) error: \(error)>"
+        "<FlowError id: \(id) error: \(error)>"
+    }
+}
+
+/// An execution token helps a `FlowError` make sure that at most one error
+/// action is run.
+@MainActor @Observable private class ExecutionToken {
+    // Observable
+    private(set) var isExecuted = false
+    
+    var canExecute: Bool {
+        !isExecuted || allowMultipleActionExecutions
+    }
+    
+    private let allowMultipleActionExecutions: Bool
+    
+    init(allowMultipleActionExecutions: Bool) {
+        self.allowMultipleActionExecutions = allowMultipleActionExecutions
+    }
+    
+    /// Executes the provided closure.
+    func execute(_ action: () -> Void) {
+        if isExecuted && allowMultipleActionExecutions == false {
+            reportIssue("""
+                Multiple FlowError actions executed.
+                
+                This might be unexpected by the code that created the \
+                FlowError in the first place.
+                
+                To fix this, either update the user interface so that \
+                a single action can be executed, or set the \
+                allowMultipleActionExecutions flag when the FlowError \
+                is created.
+                
+                For example, present the flow error with an alert:
+                
+                  // Presenting the error with an alert guarantees
+                  // single action execution
+                  ContentView().presentError($flowError, with: .alert)
+                
+                Alternatively:
+                
+                  // Declare that action closures can be executed
+                  // multiple times
+                  flowError = FlowError(
+                    error: error,
+                    allowMultipleActionExecutions: true)
+                  .onCancel { _ in /* may be executed multiple times */ }
+                  .onRetry { /* may be executed multiple times */ }
+                  .finally { /* may be executed multiple times */ }
+                """)
+        }
+        
+        if !isExecuted { isExecuted = true }
+        action()
+    }
+    
+    /// Executes the provided closure unless an action was already
+    /// performed.
+    ///
+    /// - Returns: Whether the closure was executed.
+    @discardableResult
+    func executeUnlessExecuted(_ action: () -> Void) -> Bool {
+        if isExecuted {
+            return false
+        } else {
+            isExecuted = true
+            action()
+            return true
+        }
     }
 }
 
@@ -251,9 +252,10 @@ extension FlowError {
     /// run first, with the ``ErrorCancelReason/supplementaryActionPerformed``
     /// reason.
     ///
-    /// Unless the flow error was created with the
-    /// `allowMultipleActionExecutions` flag, a test failure is reported if
-    /// an action was already performed.
+    /// Call this method only when ``canPerformAction`` is true. Otherwise,
+    /// a test failure is reported. For example, a presentation that
+    /// remains on screen after the user selects an action must disable
+    /// its buttons when ``canPerformAction`` is false.
     ///
     /// - precondition: The action argument must be available in the
     ///   flow error, as the retry action, or a supplementary action.
@@ -280,9 +282,10 @@ extension FlowError {
     /// ``ErrorCancelReason/userCancelled`` reason, followed by the
     /// `finally` closure.
     ///
-    /// Unless the flow error was created with the
-    /// `allowMultipleActionExecutions` flag, a test failure is reported if
-    /// an action was already performed.
+    /// Call this method only when ``canPerformAction`` is true. Otherwise,
+    /// a test failure is reported. For example, a presentation that
+    /// remains on screen after the user selects an action must disable
+    /// its buttons when ``canPerformAction`` is false.
     ///
     /// When a flow error is programmatically discarded, prefer the
     /// ``discard(_:)`` method.

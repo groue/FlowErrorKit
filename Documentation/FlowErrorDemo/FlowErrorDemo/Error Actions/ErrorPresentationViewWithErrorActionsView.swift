@@ -4,8 +4,9 @@ import FlowErrorKit
 
 struct ErrorPresentationViewWithErrorActionsView: View {
     private var sourceLocation: SourceLocation
-    private let failureProbability: Double
-    private let makeError: () -> Error
+    private var allowMultipleActionExecutions: Bool
+    private var failureProbability: Double
+    private var makeError: () -> Error
     @Environment(\.dismiss) var dismiss
     @State private var emoji: String?
     @State private var flowError: FlowError?
@@ -16,6 +17,7 @@ struct ErrorPresentationViewWithErrorActionsView: View {
     ///   - failureProbability: The probability that the error is thrown.
     init(
         error: @autoclosure @escaping () -> Error,
+        allowMultipleActionExecutions: Bool = false,
         failureProbability: Double = 0.5,
         file: StaticString = #fileID,
         line: Int = #line)
@@ -23,12 +25,13 @@ struct ErrorPresentationViewWithErrorActionsView: View {
         self.sourceLocation = SourceLocation(file: file, line: line)
         self.makeError = error
         self.failureProbability = failureProbability
+        self.allowMultipleActionExecutions = allowMultipleActionExecutions
     }
     
     var body: some View {
         Group {
             if let errorPresentation {
-                ErrorPresentationView(errorPresentation, actions: .includingCancel)
+                ErrorPresentationView(errorPresentation, cancelButton: .visible)
             } else {
                 VStack {
                     EmojiView(emoji: emoji)
@@ -59,7 +62,7 @@ struct ErrorPresentationViewWithErrorActionsView: View {
             flowError = nil
         } catch {
             // Turn the error into a FlowError
-            flowError = FlowError(error: error)
+            flowError = FlowError(error: error, allowMultipleActionExecutions: allowMultipleActionExecutions)
                 .onCancel { reason in
                     if reason == .userCancelled {
                         // Only dismiss if user explicitly selects the Cancel button.

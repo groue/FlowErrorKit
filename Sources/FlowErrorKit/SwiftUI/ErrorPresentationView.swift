@@ -7,61 +7,83 @@ import SwiftUI
 /// You get the displayed error presentation by presenting a flow error
 /// with ``SwiftUICore/View/presentError(_:with:)-(_,Binding<ErrorPresentation?>)``.
 ///
-/// In the DEBUG configuration, the view also describes the presented
-/// error.
+/// The view displays the retry and supplementary actions, and
+/// optionally the cancel action.
 ///
 /// Unlike an alert, the view remains on screen after the user selects an
-/// action, until your application removes it.
+/// action, until your application removes it (by setting the flow error
+/// to nil). Meanwhile, the action buttons are disabled, unless the flow
+/// error was created with the `allowMultipleActionExecutions` flag (see
+/// ``FlowError/canPerformAction``).
+///
+/// If the flow error can no longer perform an action when the view first
+/// displays it (for example, after a ``FlowErrorHandler`` has cancelled
+/// its presentation), the action buttons are hidden instead.
+///
+/// In the DEBUG configuration, the view also describes the presented
+/// error.
 public struct ErrorPresentationView<Footer: View>: View {
+    /// Whether the actions of a flow error are hidden.
+    private struct ActionsVisibility {
+        var flowErrorID: ObjectIdentifier
+        var isHidden: Bool
+        
+        @MainActor init(_ flowError: FlowError) {
+            self.flowErrorID = flowError.id
+            self.isHidden = !flowError.canPerformAction
+        }
+    }
+    
     private var errorPresentation: ErrorPresentation
-    private var actions: ErrorActionsVisibility
+    private var cancelButton: Visibility
     private var footer: Footer
+    
+    /// The visibility of actions, determined when a flow error is first
+    /// displayed.
+    ///
+    /// It is not determined in the initializer, which runs during the
+    /// body of the parent view: reading the observable
+    /// ``FlowError/canPerformAction`` there would invalidate the parent
+    /// view when an action is performed.
+    @State private var actionsVisibility: ActionsVisibility?
     
     /// Creates a view that displays an error presentation.
     ///
     /// - parameter errorPresentation: An error presentation.
-    /// - parameter actions: The visibility of the error action buttons.
-    ///   The default `.automatic` shows the retry and supplementary
-    ///   actions, but not the cancel action. Use `.includingCancel` to
-    ///   also show the cancel action, and `.hidden` to hide all actions.
-    /// - parameter footer: A view to display below error actions.
+    /// - parameter cancelButton: The visibility of the cancel button,
+    ///   hidden unless `.visible`.
+    /// - parameter footer: A view to display below the action buttons.
     public init(
         _ errorPresentation: ErrorPresentation,
-        actions: ErrorActionsVisibility = .automatic,
+        cancelButton: Visibility = .automatic,
         @ViewBuilder footer: (() -> Footer) = { EmptyView() })
     {
         self.errorPresentation = errorPresentation
-        self.actions = actions
+        self.cancelButton = cancelButton
         self.footer = footer()
     }
     
     public var body: some View {
         ContentUnavailableView.error(
             errorPresentation,
-            actions: actions,
+            actionsHidden: actionsHidden,
+            cancelButton: cancelButton,
             footer: { footer })
+        .onChange(of: errorPresentation.flowError.id, initial: true) {
+            actionsVisibility = ActionsVisibility(errorPresentation.flowError)
+        }
     }
-}
-
-// MARK: - ErrorActionsVisibility
-
-/// The visibility of the error action buttons in an
-/// ``ErrorPresentationView``.
-public enum ErrorActionsVisibility: Sendable, Hashable {
-    /// The retry and supplementary actions are visible, but not the
-    /// cancel action.
-    case automatic
     
-    /// All actions are visible, including the cancel action.
-    case includingCancel
-    
-    /// No action is visible.
-    ///
-    /// For example, use `.hidden` when no action can be performed, such as
-    /// after a ``FlowErrorHandler`` has cancelled the presentation of the
-    /// flow error, and the application still needs to display an error
-    /// state.
-    case hidden
+    private var actionsHidden: Bool {
+        let flowError = errorPresentation.flowError
+        if let actionsVisibility, actionsVisibility.flowErrorID == flowError.id {
+            return actionsVisibility.isHidden
+        } else {
+            // `actionsVisibility` is not determined yet for this flow
+            // error (first render, or new flow error).
+            return !flowError.canPerformAction
+        }
+    }
 }
 
 // MARK: - ContentUnavailableView
@@ -71,12 +93,14 @@ extension ContentUnavailableView {
     /// error state.
     ///
     /// - parameter errorPresentation: An error presentation.
-    /// - parameter actions: The visibility of the error actions.
-    /// - parameter footer: A view to display below error actions.
+    /// - parameter actionsHidden: Whether the action buttons are hidden.
+    /// - parameter cancelButton: The visibility of the cancel button.
+    /// - parameter footer: A view to display below the action buttons.
     @MainActor
     fileprivate static func error<Footer: View>(
         _ errorPresentation: ErrorPresentation,
-        actions: ErrorActionsVisibility = .automatic,
+        actionsHidden: Bool,
+        cancelButton: Visibility,
         @ViewBuilder footer: () -> Footer)
     -> ContentUnavailableView<Label, Description, Actions>
     where Label == ErrorPresentationContent<Footer>.Label,
@@ -85,7 +109,8 @@ extension ContentUnavailableView {
     {
         let content = ErrorPresentationContent<Footer>(
             errorPresentation: errorPresentation,
-            actionsVisibility: actions,
+            actionsHidden: actionsHidden,
+            cancelButton: cancelButton,
             footer: footer())
         
         return ContentUnavailableView(
@@ -102,7 +127,8 @@ extension ContentUnavailableView {
 @MainActor
 struct ErrorPresentationContent<Footer: View> {
     var errorPresentation: ErrorPresentation
-    var actionsVisibility: ErrorActionsVisibility
+    var actionsHidden: Bool
+    var cancelButton: Visibility
     var footer: Footer
     
     struct Label: View {
@@ -142,49 +168,38 @@ struct ErrorPresentationContent<Footer: View> {
     
     struct Actions: View {
         var flowError: FlowError
-        var visibility: ErrorActionsVisibility
+        var actionsHidden: Bool
+        var cancelButtonVisibility: Visibility
         var footer: Footer
         
         var body: some View {
-            switch visibility {
-            case .automatic:
-                ForEach(flowError.supplementaryActions) { action in
-                    supplementaryActionButton(action)
+            if !actionsHidden {
+                Group {
+                    ForEach(flowError.supplementaryActions) { action in
+                        actionButton(action)
+                    }
+                    
+                    if let retryAction = flowError.retryAction {
+                        if cancelButtonVisibility == .visible {
+                            actionButton(retryAction)
+                        } else {
+                            actionButton(retryAction)
+                                .buttonStyle(.borderedProminent)
+                        }
+                    }
+                    
+                    if cancelButtonVisibility == .visible {
+                        cancelButton()
+                            .buttonStyle(.borderedProminent)
+                    }
                 }
-                
-                if let retryAction = flowError.retryAction {
-                    retryButton(retryAction)
-                        .buttonStyle(.borderedProminent)
-                }
-                
-            case .includingCancel:
-                ForEach(flowError.supplementaryActions) { action in
-                    supplementaryActionButton(action)
-                }
-                
-                if let retryAction = flowError.retryAction {
-                    retryButton(retryAction)
-                }
-                
-                cancelButton()
-                    .buttonStyle(.borderedProminent)
-                
-            case .hidden:
-                EmptyView()
+                .disabled(!flowError.canPerformAction)
             }
             
             footer
         }
         
-        func supplementaryActionButton(_ action: ErrorAction) -> some View {
-            Button(role: action.role.map(ButtonRole.init)) {
-                flowError.performAction(action)
-            } label: {
-                Text(action.title)
-            }
-        }
-        
-        func retryButton(_ action: ErrorAction) -> some View {
+        func actionButton(_ action: ErrorAction) -> some View {
             Button(role: action.role.map(ButtonRole.init)) {
                 flowError.performAction(action)
             } label: {
@@ -228,7 +243,8 @@ struct ErrorPresentationContent<Footer: View> {
     func actions() -> Self.Actions {
         Actions(
             flowError: errorPresentation.flowError,
-            visibility: actionsVisibility,
+            actionsHidden: actionsHidden,
+            cancelButtonVisibility: cancelButton,
             footer: footer)
     }
 }
@@ -279,18 +295,23 @@ struct PreviewError: Error { }
             flowError: FlowError(error: PreviewError()).onRetry { },
             verbatimTitle: "An Error Occurred",
             message: "Could not frobnicate the fubar."),
-        actions: .includingCancel)
+        cancelButton: .visible)
 }
 
 #Preview("Hidden Actions") {
+    let flowError = {
+        let flowError = FlowError(error: PreviewError())
+            .onRetry { }
+            .appendingAction("Repair") { }
+        flowError.performCancelAction()
+        return flowError
+    }()
+    
     ErrorPresentationView(
         ErrorPresentation(
-            flowError: FlowError(error: PreviewError())
-                .onRetry { }
-                .appendingAction("Repair") { },
+            flowError: flowError,
             verbatimTitle: "An Error Occurred",
-            message: "Could not frobnicate the fubar."),
-        actions: .hidden)
+            message: "Could not frobnicate the fubar."))
 }
 
 #Preview("Custom Actions") {
