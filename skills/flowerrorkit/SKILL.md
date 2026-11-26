@@ -8,8 +8,12 @@ description: Rules and pitfalls for SwiftUI code that uses FlowErrorKit (FlowErr
 Each section lists rules first. A "Why:" line explains a rule only
 when the rule alone does not settle a case it does not mention.
 
-- Learn the library from its DocC documentation, in
-  `Sources/FlowErrorKit/Documentation.docc`: `Usage.md` for the overall
+- Learn the library from its DocC documentation, in the
+  `Sources/FlowErrorKit/Documentation.docc` folder of the FlowErrorKit
+  package checkout that the project builds with (for Xcode projects:
+  `DerivedData/<Project>-<hash>/SourcePackages/checkouts/FlowErrorKit`;
+  for Swift packages: `.build/checkouts/FlowErrorKit`; for a local
+  package dependency: its path). Read `Usage.md` for the overall
   workflow, `FlowError.md` for error actions, `FlowErrorHandler.md` for
   error handlers, and the doc comments of public declarations for the
   details.
