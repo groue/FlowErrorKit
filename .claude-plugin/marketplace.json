@@ -1,0 +1,13 @@
+{
+  "name": "flowerrorkit",
+  "owner": {
+    "name": "Gwendal Roué"
+  },
+  "plugins": [
+    {
+      "name": "flowerrorkit",
+      "source": "./",
+      "description": "Skill for writing SwiftUI code that uses FlowErrorKit: catching, handling, and presenting errors."
+    }
+  ]
+}

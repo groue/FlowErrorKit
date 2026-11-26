@@ -104,4 +104,31 @@ Other presentations, such as a toast, a banner, or a sheet, are possible with a 
 
 For more details, see the [Documentation].
 
+## AI Coding Assistants
+
+FlowErrorKit comes with a skill that helps coding agents write code that uses the library.
+
+In Claude Code:
+
+```
+/plugin marketplace add groue/FlowErrorKit
+/plugin install flowerrorkit@flowerrorkit
+```
+
+In other tools (requires [Node.js](https://nodejs.org)):
+
+```bash
+npx skills add groue/FlowErrorKit
+```
+
+The skill evolves with the library, and does not update by itself. When you upgrade FlowErrorKit, update the skill as well.
+
+In Claude Code, run `/plugin marketplace update flowerrorkit`, then `/reload-plugins`. To get updates automatically, enable auto-update for the `flowerrorkit` marketplace, in the Marketplaces tab of `/plugin`.
+
+In other tools:
+
+```bash
+npx skills update flowerrorkit
+```
+
 [Documentation]: https://swiftpackageindex.com/groue/FlowErrorKit/documentation
