@@ -1,12 +1,24 @@
 ---
 name: flowerrorkit
-description: Rules and pitfalls for SwiftUI code that uses FlowErrorKit (FlowError, ErrorPresentation, ErrorPresentationView, FlowErrorHandler, FlowErrorPresenter, presentError, handleError, errorHandler, onCancel, onRetry, finally, appendingAction, allowMultipleActionExecutions, canPerformAction). Load before catching or presenting errors in SwiftUI views, writing or registering flow error handlers (including in the App and in #Preview), writing error actions, or writing error titles and messages.
+description: Rules and pitfalls for SwiftUI code that uses FlowErrorKit (FlowError, ErrorPresentation, ErrorPresentationView, FlowErrorHandler, FlowErrorHandlerChain, FlowErrorPresenter, presentError, handleError, errorHandler, onCancel, onRetry, finally, appendingAction, withError, allowMultipleActionExecutions, canPerformAction). Load before catching or presenting errors in SwiftUI views, writing or registering flow error handlers (including in the App and in #Preview), unwrapping errors that wrap other errors, writing error actions, or writing error titles and messages.
 ---
 
 # FlowErrorKit
 
-Each section lists rules first. A "Why:" line explains a rule only
-when the rule alone does not settle a case it does not mention.
+The sections follow the life of an error: it is caught and turned into
+a flow error ([Creating and handling flow
+errors](#creating-and-handling-flow-errors)), presented to the user
+([Presenting flow errors](#presenting-flow-errors), [In-place
+presentation](#in-place-presentation)), who selects one of its actions
+([Actions](#actions)). Between the catch site and the presentation,
+error handlers adapt the flow error to the kind of error
+([Handlers](#handlers), [Wrapper errors](#wrapper-errors)). [Error
+texts](#error-texts) applies to the catch sites and to the handlers.
+
+Sections list rules. A "Why:" paragraph explains a rule only when the
+rule alone does not settle a case it does not mention.
+
+## Documentation and comments
 
 - Learn the library from its DocC documentation, in the
   `Sources/FlowErrorKit/Documentation.docc` folder of the FlowErrorKit
@@ -29,43 +41,51 @@ when the rule alone does not settle a case it does not mention.
   question.
 - Comment only what a reader could not learn from the code itself.
   Never write comments that justify following the rules of this skill
-  (why an alert, why a retry action, why a title).
+  (why an alert, why a retry action, why a title, why an unwrapping).
 
 ## Creating and handling flow errors
 
+A `FlowError` is an event: an error was caught, the error handlers must
+handle it once (and run their side effects, such as signing out), and
+the user must select one of its actions once. The identity of the flow
+error (`FlowError.id`) tracks both:
+
+- Flow errors derived with `onRetry`, `withTitle`, `appendingAction`,
+  `withError`, etc., including in error handlers, share this identity.
+- Every `FlowError(error:)` call creates a new identity, with fresh
+  actions.
+- Once the user has selected an action, or the flow error was discarded
+  (`flowError.discard(_:)`), `flowError.canPerformAction` is false, and
+  presentations disable or hide the action buttons.
+
+The rules below follow from this identity:
+
 - Create the `FlowError` where the error is delivered: a `catch` clause,
   or a one-off callback (`onError:`, `.onReceive`, `fileImporter`…).
+  When the caught error wraps another error, see [Wrapper
+  errors](#wrapper-errors) before writing the `catch` clause.
 - Never create a `FlowError` in a view `body`, and never store an
   `Error` (such as `Result<Value, Error>`) for views to read and turn
   into a `FlowError`. Models expose throwing methods, or deliver errors
   once through callbacks.
-- To display a flow error again, keep the `FlowError` instance (for example, in a SwiftUI-managed storage like `@State`). Never
-  wrap its `error` in a new `FlowError(error:)`.
+
+  Why: bodies are re-evaluated, and views are recreated. A flow error
+  created there, or from a stored `Error`, would be handled again, and
+  would offer again actions whose closures have already run.
+- To display a flow error again, keep the `FlowError` instance (for
+  example, in a SwiftUI-managed storage like `@State`). Never wrap its
+  `error` in a new `FlowError(error:)`.
 - Handle each flow error once: either present it with
-  `presentError(_:with:)`, or, when the view does not present it, pass
-  it to `errorHandler.handle(_:)` (see Errors that are not presented).
-  Never both.
+  `presentError(_:with:)` (see [Presenting flow
+  errors](#presenting-flow-errors)), or, when the view does not present
+  it, pass it to `errorHandler.handle(_:)` (see [Errors that are not
+  presented](#errors-that-are-not-presented)). Never both.
 - Never handle a flow error during a view update: in a view `body` or
   initializer, or in the `update()` method of a `DynamicProperty`.
   Handle it in a button action, `.onAppear`, `.task`, etc.
 
   Why: the side effects of error handlers may modify SwiftUI state,
   which SwiftUI forbids during a view update.
-
-Why: a `FlowError` is an event. An error was caught, the error handlers
-must handle it once (and run their side effects, such as signing out),
-and the user must select one of its actions once. The identity of the
-flow error (`FlowError.id`) tracks both:
-
-- Flow errors derived with `onRetry`, `withTitle`, `appendingAction`,
-  etc., including in error handlers, share this identity.
-- Every `FlowError(error:)` call creates a new identity, with fresh
-  actions. Bodies are re-evaluated, and views are recreated: a flow
-  error created there, or from a stored `Error`, would be handled
-  again, and would offer again actions whose closures have already run.
-- Once the user has selected an action, or the flow error was discarded
-  (`flowError.discard(_:)`), `flowError.canPerformAction` is false, and
-  presentations disable or hide the action buttons.
 
 ## Presenting flow errors
 
@@ -77,8 +97,8 @@ Present the flow errors that the user must see with
   content that the view displays anyway (a web page, a list…).
 - When the content of the screen could not be loaded, and the view has
   nothing better to show than the error, present the error in place:
-  `.presentError($flowError, with: $errorPresentation)` (see In-place
-  presentation).
+  `.presentError($flowError, with: $errorPresentation)` (see [In-place
+  presentation](#in-place-presentation)).
 
 Never display the result of `errorHandler.handle(_:)` yourself, and
 never write your own presenter, unless the rare cases described in
@@ -144,7 +164,8 @@ be loaded). Unlike an alert, it does not go away when the user selects
 an action.
 
 With `presentError($flowError, with: $errorPresentation)`, display
-`errorPresentation` in an `ErrorPresentationView`, and:
+`errorPresentation` in an `ErrorPresentationView`, and follow the rules
+below.
 
 - A handler may cancel the presentation, and then `errorPresentation`
   stays nil. In this case, display what the view displays when there is
@@ -152,6 +173,10 @@ With `presentError($flowError, with: $errorPresentation)`, display
   blank web view), or a placeholder (a `ProgressView`, `Color.clear`).
   Every view has something to display in this case: never present the
   error yourself for this reason.
+- To load a value that may fail, load from `.onAppear` with a guard so
+  that it runs once, and catch there. Give the view some content before
+  loading (a `ProgressView`, `Color.clear`): `onAppear` does not run on
+  an empty view.
 
   ```swift
   struct RecipeView: View {
@@ -206,15 +231,6 @@ With `presentError($flowError, with: $errorPresentation)`, display
   handler), create the flow error with
   `allowMultipleActionExecutions: true`, so that the buttons remain
   enabled, and the user can select an action again.
-- With `allowMultipleActionExecutions: true`, write the closures of
-  `onRetry`, `onCancel`, `finally`, and `appendingAction` so that they
-  can run several times.
-- Only consider the actions that can actually be presented: those added
-  by the catch site, and those that the error handlers in scope append
-  to the errors that the failed operation can actually throw. For
-  example, a handler that appends "Open Settings" to `CLError.denied`
-  does not matter when the failed operation is a load from a local
-  database: this load never throws `CLError`.
 
   ```swift
   // GOOD: back from Settings, the user can select "Open Settings"
@@ -232,10 +248,16 @@ With `presentError($flowError, with: $errorPresentation)`, display
       .finally { dismiss() }
   ```
 
-- To load a value that may fail, load from `.onAppear` with a guard so
-  that it runs once, and catch there. Give the view some content before
-  loading (a `ProgressView`, `Color.clear`): `onAppear` does not run on
-  an empty view. See the `RecipeView` example above.
+- The actions that can be presented are those added by the catch site,
+  and those that the handlers in scope append to the errors that the
+  failed operation can actually throw, including the inner errors that
+  are unwrapped (see [Wrapper errors](#wrapper-errors)). Ignore the
+  other actions. For example, a handler that appends "Open Settings" to
+  `CLError.denied` does not matter when the failed operation is a load
+  from a local database: this load never throws `CLError`.
+- With `allowMultipleActionExecutions: true`, write the closures of
+  `onRetry`, `onCancel`, `finally`, and `appendingAction` so that they
+  can run several times.
 
 ## Actions
 
@@ -309,27 +331,26 @@ With `presentError($flowError, with: $errorPresentation)`, display
 
 - You can assume that action closures run at most once, unless the
   flow error was created with `allowMultipleActionExecutions: true`
-  (see In-place presentation).
+  (see [In-place presentation](#in-place-presentation)).
 - Make sure the user is never stuck after dismissing an error. When the
   screen offers no way to perform the failed operation again, add one:
-  a Save, Reload, or Submit button, pull to refresh, etc. Then decide
-  whether to add `onRetry` with the next rule, now that the screen
-  offers this control.
+  a Save, Reload, or Submit button, pull to refresh, etc.
 
-  When such a control makes little sense on the screen, add `onRetry`.
-  But the user can still dismiss the error without retrying. If the
-  screen then leaves the user stuck, look for a way out, such as
+  When such a control makes little sense on the screen, add `onRetry`
+  instead. But the user can still dismiss the error without retrying.
+  If the screen then leaves the user stuck, look for a way out, such as
   dismissing the screen (see the cancel reasons of `onCancel` above).
   If you can't find one, ask the developer what the app should do when
   the user dismisses the error.
 
   Why: `onRetry` only helps while the error is presented. Once the user
   dismisses it, only the screen can offer recovery.
-- Add an `onRetry` action at the catch site when:
+- Also add `onRetry` when the screen offers a control to perform the
+  failed operation again, and:
   - Retrying by hand is not trivial: for example, the failed operation
     was an action on an item of a list, and the user may struggle to
     find that item again.
-  - Trivial transient errors are expected (no network in Airplane
+  - Or trivial transient errors are expected (no network in Airplane
     Mode), and a Retry button helps the user recover quickly.
 
   ```swift
@@ -344,9 +365,9 @@ With `presentError($flowError, with: $errorPresentation)`, display
   }
   ```
 
-- When the previous rule calls for `onRetry`, add it without checking
-  the nature of the error: error handlers remove it, with
-  `droppingRetryAction()`, when retrying can't help (see Handlers).
+- Add `onRetry` without checking the nature of the error: error
+  handlers remove it, with `droppingRetryAction()`, when retrying can't
+  help (see [Handlers](#handlers)).
 
 ## Handlers
 
@@ -381,13 +402,13 @@ With `presentError($flowError, with: $errorPresentation)`, display
       var url: URL
       @State private var document: Document?
       @State private var flowError: FlowError?
-      
+
       var body: some View {
           DocumentContent(document: document)
               .presentError($flowError, with: .alert)
               .onAppear(perform: load)
       }
-      
+
       func load() {
           do {
               document = try Document(url: url)
@@ -415,17 +436,26 @@ With `presentError($flowError, with: $errorPresentation)`, display
   fragile workarounds.
 
 - In a handler, derive flow errors from the flow error it receives
-  (`.droppingRetryAction()`, `.appendingAction(...)`, etc.). Never
-  create a new `FlowError` in a handler.
+  (`.droppingRetryAction()`, `.appendingAction(...)`, `.withError(...)`,
+  etc.). Never create a new `FlowError` in a handler.
 
   Why: a new flow error loses the identity of the caught error (see
-  Creating and handling flow errors).
+  [Creating and handling flow
+  errors](#creating-and-handling-flow-errors)).
 - When a handler appends an action, or starts handling more errors,
   review the in-place presentations that may now display the action,
-  and set `allowMultipleActionExecutions` where needed (see In-place
-  presentation).
+  and set `allowMultipleActionExecutions` where needed (see [In-place
+  presentation](#in-place-presentation)).
 
-## Sharing handlers between the app and its previews
+### Registering handlers
+
+Handlers form a chain. Each handler passes the flow error to the next
+one, presents it, or cancels it. Handlers registered closer to the
+presenting view come first. In a
+`FlowErrorHandlerChain`, the first handler of the array comes first.
+The built-in handlers of FlowErrorKit, for `CancellationError`,
+`CocoaError`, and `URLError`, always come last, after all registered
+handlers.
 
 Gather the application-wide handlers in a single chain, and register
 this same chain in the app and in every preview:
@@ -485,6 +515,94 @@ Why: previews do not run the `App` body. Without the shared chain,
 handlers registered on the scene are missing from previews, which then
 present the errors that these handlers would have customized with the
 generic, redacted presentation of FlowErrorKit.
+
+## Wrapper errors
+
+A wrapper error carries an inner error, in an enum case with an
+associated `Error` value
+(`WebPage.NavigationError.failedProvisionalNavigation(_:)`,
+`AFError.sessionTaskFailed(error:)` in Alamofire), in a property of
+type `Error` (`underlyingError`, `cause`…), or in the
+`NSUnderlyingErrorKey` of the `userInfo` of an `NSError`. Wrapper
+errors come from the SDK, from libraries, and from the application
+itself (an API client that wraps the `URLError` of its requests).
+
+A handler is written for specific errors, and does not know the
+wrapper errors that may carry them: it can't unwrap them. Unless a
+handler handles the wrapper error, the user gets the generic
+presentation instead of the one that the handlers of the inner error
+would have provided.
+
+- Before writing a `catch` clause, read the declarations of the errors
+  that the failing operation throws, and look for wrapper errors.
+- For each wrapper error, look for the handlers of the wrapper error,
+  and of its inner errors: the built-in handlers, and the handlers of
+  the application (see [Registering handlers](#registering-handlers)).
+  Find where the application registers its handlers, with
+  `handleError(with:)` or `handleError { ... }`, and read which errors
+  they handle.
+- When a handler handles the wrapper error, do not unwrap it: create
+  the flow error from the caught error, as usual.
+- Otherwise, when a handler handles the inner error, unwrap the
+  wrapper error in one of two places:
+  - At the catch site, by creating the flow error from the inner
+    error. This fits as long as no other catch site unwraps the same
+    wrapper error.
+  - In a new handler that passes `flowError.withError(innerError)` (see
+    the doc comment of `FlowErrorHandlerChain`). This fits when several
+    catch sites unwrap the same wrapper error: when reviewing code,
+    replace their unwrapping with this handler. Register it before the
+    handlers of the application that handle the inner error. It comes
+    before the built-in handlers wherever it is registered.
+
+  Unwrapping depends on the kind of error, like the actions that
+  handlers add or remove (see [Handlers](#handlers)). Unlike these
+  actions, it can stay at the catch site while that catch site is the
+  only one that needs it.
+- Otherwise, create the flow error from the caught error, as usual.
+
+The two examples below unwrap the inner error of
+`WebPage.NavigationError.failedProvisionalNavigation(_:)`, often a
+`URLError` that the built-in `URLError` handler handles. Take them as
+an inspiration, and pick the place where to unwrap according to the
+context of the application, as described above.
+
+When no other catch site loads web pages, the catch site unwraps:
+
+```swift
+func load() async {
+    do {
+        for try await _ in page.load(URLRequest(url: url)) { }
+    } catch {
+        let error = if case WebPage.NavigationError.failedProvisionalNavigation(let innerError) = error {
+            innerError
+        } else {
+            error
+        }
+        flowError = FlowError(error: error)
+            .withTitle("The page could not be loaded")
+            .onRetry { Task { await load() } }
+    }
+}
+```
+
+When several catch sites load web pages, a handler unwraps, and the
+catch sites create their flow errors from the caught error, as usual:
+
+```swift
+struct WebPageNavigationErrorHandler: FlowErrorHandler {
+    func handle(_ flowError: FlowError) -> FlowErrorHandling {
+        guard case WebPage.NavigationError.failedProvisionalNavigation(let innerError) = flowError.error else {
+            return .pass(flowError)
+        }
+        return .pass(flowError.withError(innerError))
+    }
+}
+```
+
+Add this handler to the `defaultErrorHandlers` chain (see [Registering
+handlers](#registering-handlers)), before the handlers of the
+application that handle `URLError`.
 
 ## Error texts
 
