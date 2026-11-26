@@ -131,4 +131,8 @@ In other tools:
 npx skills update flowerrorkit
 ```
 
+## Thanks
+
+Thank you [@pakko972](https://github.com/pakko972) for years of shared effort toward an error-handling library that does not suck.
+
 [Documentation]: https://swiftpackageindex.com/groue/FlowErrorKit/documentation
