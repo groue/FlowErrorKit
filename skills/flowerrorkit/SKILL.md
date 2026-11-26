@@ -39,9 +39,9 @@ when the rule alone does not settle a case it does not mention.
 - To display a flow error again, keep the `FlowError` instance (for example, in a SwiftUI-managed storage like `@State`). Never
   wrap its `error` in a new `FlowError(error:)`.
 - Handle each flow error once: either present it with
-  `presentError(_:with:)`, or pass it to `errorHandler.handle(_:)`
-  (with `@Environment(\.errorHandler) private var errorHandler`), never
-  both.
+  `presentError(_:with:)`, or, when the view does not present it, pass
+  it to `errorHandler.handle(_:)` (see Errors that are not presented).
+  Never both.
 - Never handle a flow error during a view update: in a view `body` or
   initializer, or in the `update()` method of a `DynamicProperty`.
   Handle it in a button action, `.onAppear`, `.task`, etc.
@@ -64,6 +64,74 @@ flow error (`FlowError.id`) tracks both:
   (`flowError.discard(_:)`), `flowError.canPerformAction` is false, and
   presentations disable or hide the action buttons.
 
+## Presenting flow errors
+
+Present the flow errors that the user must see with
+`presentError(_:with:)`, and pick one of the two built-in presentations:
+
+- By default, present an alert: `.presentError($flowError, with: .alert)`.
+  This fits errors of actions (save, send, delete…), and errors of
+  content that the view displays anyway (a web page, a list…).
+- When the content of the screen could not be loaded, and the view has
+  nothing better to show than the error, present the error in place:
+  `.presentError($flowError, with: $errorPresentation)` (see In-place
+  presentation).
+
+Never display the result of `errorHandler.handle(_:)` yourself, and
+never write your own presenter, unless the rare cases described in
+[references/custom-presentation.md](references/custom-presentation.md)
+apply, and neither built-in presentation fits. Read that file before
+taking this path.
+
+### Errors that are not presented
+
+A view may choose not to present an error, so that it does not bother
+the user: the error of an automatic refresh when the view displays
+cached data, the error of a background task, etc. Never ignore such an
+error: pass it to `errorHandler.handle(_:)`, so that the error handlers
+of the environment run their side effects (such as signing out the user
+after a 401 Unauthorized HTTP error). Ignore the returned value.
+
+```swift
+struct NewsView: View {
+    @Environment(\.errorHandler) private var errorHandler
+    @Environment(NewsStore.self) private var store
+    @State private var flowError: FlowError?
+
+    var body: some View {
+        // Displays the cached news.
+        NewsList(news: store.news)
+            .toolbar {
+                Button("Refresh") {
+                    Task { await refresh() }
+                }
+            }
+            .presentError($flowError, with: .alert)
+            .task { await automaticRefresh() }
+    }
+
+    func automaticRefresh() async {
+        do {
+            try await store.refresh()
+        } catch {
+            // Don't bother the user, who sees the cached news, but let
+            // handlers run their side effects.
+            _ = errorHandler.handle(FlowError(error: error))
+        }
+    }
+
+    // The user asked for a refresh: present its error.
+    func refresh() async {
+        do {
+            try await store.refresh()
+        } catch {
+            flowError = FlowError(error: error)
+                .withTitle("The news could not be refreshed")
+        }
+    }
+}
+```
+
 ## In-place presentation
 
 An in-place presentation displays the error in the view itself, as an
@@ -75,9 +143,57 @@ With `presentError($flowError, with: $errorPresentation)`, display
 `errorPresentation` in an `ErrorPresentationView`, and:
 
 - A handler may cancel the presentation, and then `errorPresentation`
-  stays nil. Use `presentError(_:with:)` only when the view has
-  something to display in this case, such as its regular content.
-  Otherwise, present the error yourself (see below).
+  stays nil. In this case, display what the view displays when there is
+  no error: its regular content, even empty or blank (an empty list, a
+  blank web view), or a placeholder (a `ProgressView`, `Color.clear`).
+  Every view has something to display in this case: never present the
+  error yourself for this reason.
+
+  ```swift
+  struct RecipeView: View {
+      var recipeID: Recipe.ID
+      @Environment(RecipeClient.self) private var client
+      @State private var recipe: Recipe?
+      @State private var flowError: FlowError?
+      @State private var errorPresentation: ErrorPresentation?
+      @State private var didStartLoading = false
+
+      var body: some View {
+          Group {
+              if let recipe {
+                  RecipeContent(recipe: recipe)
+              } else if let errorPresentation {
+                  ErrorPresentationView(errorPresentation)
+              } else {
+                  // While loading, and when a handler cancels the
+                  // presentation of the error.
+                  ProgressView()
+              }
+          }
+          .presentError($flowError, with: $errorPresentation)
+          .onAppear {
+              guard !didStartLoading else { return }
+              didStartLoading = true
+              Task { await load() }
+          }
+      }
+
+      func load() async {
+          do {
+              recipe = try await client.recipe(id: recipeID)
+          } catch {
+              flowError = FlowError(error: error)
+                  .withTitle("The recipe could not be loaded")
+                  .onRetry {
+                      // Removes the error presentation while loading.
+                      flowError = nil
+                      Task { await load() }
+                  }
+          }
+      }
+  }
+  ```
+
 - After the user selects an action, the `ErrorPresentationView` remains
   on screen, with disabled buttons. Make sure that every action that
   can be presented dismisses the screen, or clears or replaces the flow
@@ -114,48 +230,8 @@ With `presentError($flowError, with: $errorPresentation)`, display
 
 - To load a value that may fail, load from `.onAppear` with a guard so
   that it runs once, and catch there. Give the view some content before
-  loading (`Color.clear`): `onAppear` does not run on an empty view.
-
-When the view has nothing to display if a handler cancels the
-presentation, present the error yourself. The rules above about actions
-still apply, and the view follows the presenter contract (see Custom
-error presentation):
-
-- In the catch clause, call `errorHandler.handle(flowError)`, and
-  display the returned `errorPresentation` in an
-  `ErrorPresentationView`.
-- When the result has no `errorPresentation` (a handler cancelled the
-  presentation), call `flowError.discard(.presentationCancelled)`, then
-  display `ErrorPresentation(flowError: flowError)`.
-- Before replacing or removing a displayed error presentation, call
-  `errorPresentation.flowError.discard(.presentationCancelled)`.
-
-## Custom error presentation
-
-Implement a `FlowErrorPresenter` that follows the contract documented
-in the protocol, or a view that follows the same contract. In summary:
-
-- Perform the actions of a flow error with
-  `flowError.performAction(action)` or `flowError.performCancelAction()`,
-  and only once, unless the flow error was created with
-  `allowMultipleActionExecutions: true`. `flowError.canPerformAction`
-  tells whether an action can still be performed.
-- Discard the flow errors whose presentation is cancelled by a handler,
-  with `flowError.discard(.presentationCancelled)`.
-- Discard a pending flow error, with
-  `flowError.discard(.presentationCancelled)`, when the user can no
-  longer select any of its actions, but only when the presenter can
-  tell it deterministically. Never discard it from `.onDisappear`, nor
-  from a `deinit`.
-
-  Why: when the user switches to another tab and back, an in-place
-  presentation comes back on screen, and the user can still select an
-  action. Your code does not control when a `deinit` runs.
-- Expect a new flow error while another one is presented, and decide
-  what to do in a way that follows the rules above.
-
-Why: a presenter lets the user perform the actions of a flow error,
-and, whenever possible, never leaves a flow error unattended.
+  loading (a `ProgressView`, `Color.clear`): `onAppear` does not run on
+  an empty view. See the `RecipeView` example above.
 
 ## Actions
 
