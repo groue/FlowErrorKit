@@ -27,6 +27,9 @@ when the rule alone does not settle a case it does not mention.
   permission to read the implementation, and name the files and the
   question. Read them only after the user approves, and only for that
   question.
+- Comment only what a reader could not learn from the code itself.
+  Never write comments that justify following the rules of this skill
+  (why an alert, why a retry action, why a title).
 
 ## Creating and handling flow errors
 
@@ -92,6 +95,11 @@ error: pass it to `errorHandler.handle(_:)`, so that the error handlers
 of the environment run their side effects (such as signing out the user
 after a 401 Unauthorized HTTP error). Ignore the returned value.
 
+In the example below, the view displays cached news. The error of the
+automatic refresh is not presented, because the user still sees the
+cached news. The error of the refresh that the user asked for is
+presented.
+
 ```swift
 struct NewsView: View {
     @Environment(\.errorHandler) private var errorHandler
@@ -99,7 +107,6 @@ struct NewsView: View {
     @State private var flowError: FlowError?
 
     var body: some View {
-        // Displays the cached news.
         NewsList(news: store.news)
             .toolbar {
                 Button("Refresh") {
@@ -114,13 +121,10 @@ struct NewsView: View {
         do {
             try await store.refresh()
         } catch {
-            // Don't bother the user, who sees the cached news, but let
-            // handlers run their side effects.
             _ = errorHandler.handle(FlowError(error: error))
         }
     }
 
-    // The user asked for a refresh: present its error.
     func refresh() async {
         do {
             try await store.refresh()
@@ -306,9 +310,22 @@ With `presentError($flowError, with: $errorPresentation)`, display
 - You can assume that action closures run at most once, unless the
   flow error was created with `allowMultipleActionExecutions: true`
   (see In-place presentation).
+- Make sure the user is never stuck after dismissing an error. When the
+  screen offers no way to perform the failed operation again, add one:
+  a Save, Reload, or Submit button, pull to refresh, etc. Then decide
+  whether to add `onRetry` with the next rule, now that the screen
+  offers this control.
+
+  When such a control makes little sense on the screen, add `onRetry`.
+  But the user can still dismiss the error without retrying. If the
+  screen then leaves the user stuck, look for a way out, such as
+  dismissing the screen (see the cancel reasons of `onCancel` above).
+  If you can't find one, ask the developer what the app should do when
+  the user dismisses the error.
+
+  Why: `onRetry` only helps while the error is presented. Once the user
+  dismisses it, only the screen can offer recovery.
 - Add an `onRetry` action at the catch site when:
-  - The user can't retry otherwise: the screen offers no way to run
-    the failed operation again.
   - Retrying by hand is not trivial: for example, the failed operation
     was an action on an item of a list, and the user may struggle to
     find that item again.
@@ -345,15 +362,14 @@ With `presentError($flowError, with: $errorPresentation)`, display
 
   ```swift
   // GOOD: "Open Settings" fixes CLError.denied, whatever the operation
-  // that failed. A handler appends it.
+  // that failed. A handler appends it, and drops the retry action, which
+  // can't help until the user grants permission.
   struct CLErrorDeniedHandler: FlowErrorHandler {
       func handle(_ flowError: FlowError) -> FlowErrorHandling {
           guard case CLError.denied = flowError.error else {
               return .pass(flowError)
           }
           return .present(ErrorPresentation(flowError: flowError
-              // CLError.denied can't be retried until the user grants
-              // permission.
               .droppingRetryAction()
               .appendingAction("Open Settings") { openSettings() }))
       }
