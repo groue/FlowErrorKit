@@ -18,7 +18,7 @@ Catch the error, turn it into a `FlowError`, and present it with an alert:
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Documentation/Images/Alert-dark.png">
-  <img align="right" src="Documentation/Images/Alert-light.png" width="300" alt="An alert titled 'Could not save the document', with Cancel and Retry buttons.">
+  <img align="right" src="Documentation/Images/Alert-light.png" width="25%" alt="An alert titled 'Could not save the document', with Cancel and Retry buttons.">
 </picture>
 
 ```swift
@@ -56,7 +56,7 @@ Or display the error in place of the view content, with an `ErrorPresentationVie
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="Documentation/Images/ErrorPresentationView-dark.png">
-  <img align="right" src="Documentation/Images/ErrorPresentationView-light.png" width="300" alt="An ErrorPresentationView in place of the news list, titled 'Could not load the news', with a Retry button.">
+  <img align="right" src="Documentation/Images/ErrorPresentationView-light.png" width="25%" alt="An ErrorPresentationView in place of the news list, titled 'Could not load the news', with a Retry button.">
 </picture>
 
 ```swift
