@@ -3,36 +3,6 @@ import SwiftUI
 // MARK: - ErrorPresentationView
 
 /// A view that conveys an error state.
-///
-/// The ``FlowErrorPresenter/errorPresentationView`` presenter displays
-/// this view in place of the view content when a flow error occurs. To
-/// customize the view, return it from the closure of
-/// ``FlowErrorPresenter/errorPresentationView(_:)``:
-///
-/// ```swift
-/// ContentView()
-///     .presentError($flowError, with: .errorPresentationView { errorPresentation in
-///         ErrorPresentationView(errorPresentation) {
-///             Button("Contact Support") { ... }
-///         }
-///     })
-/// ```
-///
-/// The view displays the retry and supplementary actions, and
-/// optionally the cancel action.
-///
-/// Unlike an alert, the view remains on screen after the user selects an
-/// action, until your application removes it (by setting the flow error
-/// to nil). Meanwhile, the action buttons are disabled, unless the flow
-/// error was created with the `allowMultipleActionExecutions` flag (see
-/// ``FlowError/canPerformAction``).
-///
-/// If the flow error can no longer perform an action when the view first
-/// displays it (for example, after a ``FlowErrorHandler`` has cancelled
-/// its presentation), the action buttons are hidden instead.
-///
-/// In the DEBUG configuration, the view also describes the presented
-/// error.
 public struct ErrorPresentationView<Footer: View>: View {
     /// Whether the actions of a flow error are hidden.
     private struct ActionsVisibility {
@@ -61,8 +31,11 @@ public struct ErrorPresentationView<Footer: View>: View {
     /// Creates a view that displays an error presentation.
     ///
     /// - parameter errorPresentation: An error presentation.
-    /// - parameter cancelButton: The visibility of the cancel button,
-    ///   hidden unless `.visible`.
+    /// - parameter cancelButton: The visibility of the cancel button:
+    ///   hidden unless `.visible`. This parameter is ignored when the view
+    ///   starts presenting a flow error that cannot perform any
+    ///   action, as reported by ``FlowError/canPerformAction``. In this
+    ///   case, all action buttons are hidden.
     /// - parameter footer: A view to display below the action buttons.
     public init(
         _ errorPresentation: ErrorPresentation,

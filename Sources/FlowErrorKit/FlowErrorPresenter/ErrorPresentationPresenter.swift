@@ -69,7 +69,14 @@ extension FlowErrorPresenter {
     /// A presenter that displays a custom error view in place of the
     /// view content when a flow error occurs.
     ///
-    /// For example:
+    /// This presenter behaves like
+    /// ``FlowErrorPresenter/errorPresentationView``, with one difference:
+    /// the error view is the one returned by the `errorContent` closure.
+    /// The closure receives the ``ErrorPresentation`` of the presented
+    /// flow error.
+    ///
+    /// For example, the error view below displays a progress indicator,
+    /// and disables its buttons, while the content is loading:
     ///
     /// ```swift
     /// import FlowErrorKit
@@ -81,21 +88,17 @@ extension FlowErrorPresenter {
     ///     var body: some View {
     ///         ContentView()
     ///             .presentError($flowError, with: .errorPresentationView { errorPresentation in
-    ///                 ErrorPresentationView(errorPresentation) {
+    ///                 ErrorPresentationView(errorPresentation, footer: {
     ///                     ProgressView().opacity(isLoading ? 1 : 0)
-    ///                 }
+    ///                 })
     ///                 .disabled(isLoading)
     ///             })
     ///     }
     /// }
     /// ```
     ///
-    /// The presenter behaves like
-    /// ``FlowErrorPresenter/errorPresentationView``.
-    ///
     /// - parameter errorContent: A closure that returns the error view,
-    ///   displayed in place of the view content. Display the error
-    ///   presentation in an ``ErrorPresentationView``.
+    ///   given the error presentation to display.
     public static func errorPresentationView<ErrorContent: View>(
         @ViewBuilder _ errorContent: @escaping (ErrorPresentation) -> ErrorContent
     ) -> Self where Self == ErrorPresentationPresenter<ErrorContent> {
@@ -112,76 +115,48 @@ extension FlowErrorPresenter where Self == ErrorPresentationPresenter<ErrorPrese
     /// ```swift
     /// import FlowErrorKit
     ///
-    /// struct MyView: View {
+    /// struct NewsView: View {
+    ///     @State private var news: [Article] = []
     ///     @State private var flowError: FlowError?
     ///
     ///     var body: some View {
-    ///         Button("Try Me", action: performFailableAction)
-    ///             // Capture and present the flow error
-    ///             .presentError($flowError, with: .errorPresentationView)
+    ///         List(news) { article in
+    ///             Text(article.title)
+    ///         }
+    ///         .presentError($flowError, with: .errorPresentationView)
+    ///         .task { await load() }
     ///     }
     ///
-    ///     func performFailableAction() {
+    ///     func load() async {
     ///         do {
-    ///             try failableMethod()
+    ///             news = try await fetchNews()
     ///             // Success: remove the error view
     ///             flowError = nil
     ///         } catch {
-    ///             // Turn the error into a FlowError
     ///             flowError = FlowError(error: error)
-    ///                 .onRetry(action: performFailableAction)
+    ///                 .withTitle("Could not load the news")
+    ///                 .onRetry { Task { await load() } }
     ///         }
     ///     }
     /// }
     /// ```
     ///
-    /// To customize the error view, use
+    /// To configure the error view, use
     /// ``FlowErrorPresenter/errorPresentationView(_:)``.
     ///
-    /// The error view replaces the view content, including the modifiers
-    /// applied before `presentError`. Apply the modifiers that must remain
-    /// visible, such as `navigationTitle` or `toolbar`, after
-    /// `presentError`.
-    ///
-    /// When the error view goes away, the view content is created again:
-    /// the state of its subviews is reset, and its `task` and `onAppear`
-    /// modifiers run again. Apply the modifiers that load the content
-    /// after `presentError`, so that the content is not loaded twice
-    /// after a successful retry:
-    ///
-    /// ```swift
-    /// List(news) { article in Text(article.title) }
-    ///     .presentError($flowError, with: .errorPresentationView)
-    ///     .task { await load() } // After presentError
-    /// ```
-    ///
     /// Unlike an alert, the error view is not automatically removed when
-    /// the user selects an error action. Applications remove it by
-    /// setting `flowError` to nil, as soon as the view content is
-    /// available (for example, when a retried action succeeds), as in the
-    /// sample code above. Setting `flowError` to nil does not perform any
-    /// action.
+    /// the user selects an action. The application removes the error view
+    /// by setting `flowError` to nil, as the `load()` method does in the
+    /// sample code above.
     ///
-    /// Once the user has selected an action, the ``ErrorPresentationView``
-    /// disables its buttons. To let the user select an action again (for
-    /// example, after coming back from "Open Settings"), create the flow
-    /// error with `allowMultipleActionExecutions`.
-    ///
-    /// If a new flow error is set while a previous one is presented, the
-    /// new error replaces the previous one, and the cancel action of the
-    /// previous one is run.
-    ///
-    /// However, a ``FlowErrorHandler`` may prevent the presentation of a
-    /// flow error (see ``FlowErrorHandling/cancel``). In this case, the
-    /// cancel action of this flow error runs, and the screen does not
-    /// change: the view content remains displayed, or the previously
-    /// presented error, if any, remains on screen, and is not replaced.
+    /// ## Discarding the Presented Error
     ///
     /// The presented flow error is not discarded when the view
-    /// disappears, because the presentation may come back on screen (for
-    /// example, when the user switches to another tab and back). When the
+    /// disappears, because the error view may come back on screen, for
+    /// example when the user switches to another tab and back. When the
     /// application knows that the user can no longer select any action,
-    /// it can discard the flow error, so that its cancel action runs:
+    /// it should discard the flow error explicitly, so that its cancel
+    /// action runs:
     ///
     /// ```swift
     /// flowError?.discard(.presentationCancelled)

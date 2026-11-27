@@ -92,8 +92,7 @@ import SwiftUI
     /// error is discarded, unless the flow error was created with the
     /// `allowMultipleActionExecutions` flag.
     ///
-    /// This property is observable. ``ErrorPresentationView`` uses it to
-    /// disable its buttons.
+    /// This property is observable.
     public var canPerformAction: Bool {
         executionToken.canExecute
     }
