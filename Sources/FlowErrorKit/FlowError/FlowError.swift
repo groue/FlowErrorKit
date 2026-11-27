@@ -22,18 +22,19 @@ import SwiftUI
         }
     }
     
-    /// The identifier of the `FlowError` identifies the creation of the
-    /// `FlowError` instance from a particular error.
+    /// The identifier of the flow error.
     ///
-    /// When two `FlowError` instances share the same id, they originate
-    /// from the same error.
+    /// Each call to ``init(error:allowMultipleActionExecutions:)``
+    /// creates a new identifier. The flow errors derived from a flow
+    /// error, with methods such as ``onRetry(action:)`` or
+    /// ``withError(_:)``, share its identifier.
     ///
     /// For example:
     ///
     /// ```swift
     /// let flowError = FlowError(error: error)
-    /// let other = FlowError(error: otherError)
-    /// let derived = flowError.onRetry { ... }
+    /// let other = FlowError(error: error)
+    /// let derived = flowError.withError(otherError)
     /// flowError.id == other.id   // false
     /// flowError.id == derived.id // true
     /// ```
@@ -71,8 +72,8 @@ import SwiftUI
     ///
     /// To execute the retry action, use ``performAction(_:)``.
     ///
-    /// For more information about recoverable errors,
-    /// see ``FlowErrorHandler/handle(_:)``.
+    /// Error handlers can remove the retry action of errors that
+    /// retrying cannot fix (see <doc:FlowError#Error-Actions>).
     public private(set) var retryAction: ErrorAction?
     
     /// The supplementary actions.
@@ -142,8 +143,6 @@ import SwiftUI
     ///         } catch {
     ///             // Turn the error into a FlowError
     ///             flowError = FlowError(error: error)
-    ///                 .onCancel { ... }
-    ///                 .onRetry(action: performSomeAction)
     ///         }
     ///     }
     /// }
@@ -252,9 +251,9 @@ extension FlowError {
     /// reason.
     ///
     /// Call this method only when ``canPerformAction`` is true. Otherwise,
-    /// a test failure is reported. For example, a presentation that
-    /// remains on screen after the user selects an action must disable
-    /// its buttons when ``canPerformAction`` is false.
+    /// the action is performed anyway, and an issue is reported: a
+    /// runtime warning when the app runs in the debugger, or a test
+    /// failure in tests.
     ///
     /// - precondition: The action argument must be available in the
     ///   flow error, as the retry action, or a supplementary action.
@@ -282,9 +281,9 @@ extension FlowError {
     /// `finally` closure.
     ///
     /// Call this method only when ``canPerformAction`` is true. Otherwise,
-    /// a test failure is reported. For example, a presentation that
-    /// remains on screen after the user selects an action must disable
-    /// its buttons when ``canPerformAction`` is false.
+    /// the cancel action is performed anyway, and an issue is reported: a
+    /// runtime warning when the app runs in the debugger, or a test
+    /// failure in tests.
     ///
     /// When a flow error is programmatically discarded, prefer the
     /// ``discard(_:)`` method.
@@ -523,8 +522,7 @@ extension FlowError {
         onRetry(title, action: action)
     }
     
-    /// Returns a flow error without any retry action (useful for
-    /// unrecoverable errors).
+    /// Returns a flow error without any retry action.
     ///
     /// Use this method for unrecoverable errors, in order to prevent the
     /// user from retrying the failed action.
@@ -656,7 +654,8 @@ extension FlowError {
     /// Returns a flow error with a customized title.
     ///
     /// The provided title is displayed prominently, and has priority over
-    /// the title provided by flow error handlers. For example, compare the
+    /// the title provided by flow error handlers, which is then displayed
+    /// as a subtitle (see ``ErrorPresentation``). For example, compare the
     /// alerts presented in the sample code below:
     ///
     /// ```swift
@@ -665,8 +664,9 @@ extension FlowError {
     ///     do {
     ///         messages = try await fetchMessages()
     ///     } catch {
+    ///         // The title is provided by the handling of URLError:
     ///         // ┌──────────────────────────┐
-    ///         // │ The Internet connection  │ <- provided by the handler of URLError
+    ///         // │ The Internet connection  │
     ///         // │ appears to be offline.   │
     ///         // │                          │
     ///         // │          [ OK ]          │
@@ -680,11 +680,13 @@ extension FlowError {
     ///     do {
     ///         messages = try await fetchMessages()
     ///     } catch {
-    ///         // Alert title is provided by the FlowError itself:
+    ///         // The title is provided by the FlowError itself,
+    ///         // and the title provided by the handling of
+    ///         // URLError becomes a subtitle:
     ///         // ┌──────────────────────────────┐
-    ///         // │ Could not fetch new messages │ <- the FlowError title
+    ///         // │ Could not fetch new messages │
     ///         // │                              │
-    ///         // │ The Internet connection      │ <- provided by the handler of URLError
+    ///         // │ The Internet connection      │
     ///         // │ appears to be offline.       │
     ///         // │                              │
     ///         // │            [ OK ]            │
@@ -725,8 +727,13 @@ extension FlowError {
         withTitle(title)
     }
     
-    /// Returns a flow error with a different error (useful when unwrapping
-    /// underlying errors).
+    /// Returns a flow error with a different error.
+    ///
+    /// An error handler can use this method in order to pass an
+    /// underlying error to the next handlers (see
+    /// ``FlowErrorHandlerChain/init(_:)``).
+    ///
+    /// - parameter error: The new error.
     public func withError(_ error: any Error) -> FlowError {
         var result = self
         result.error = error
@@ -742,10 +749,14 @@ public enum ErrorCancelReason: Sendable {
     /// ``FlowError/performCancelAction()`` was called.
     case userCancelled
     
-    /// The error was not presented to the user (for example, an error
-    /// handler returned ``FlowErrorHandling/cancel``), it was discarded
-    /// due to a conflict with another error, or the view that presented
-    /// it in an alert has disappeared.
+    /// The flow error was discarded without the user selecting any of its
+    /// actions.
+    ///
+    /// For example, an error handler returned
+    /// ``FlowErrorHandling/cancel``, the flow error conflicted with
+    /// another presented flow error, the view that presented it in an
+    /// alert has disappeared, or the application called
+    /// ``FlowError/discard(_:)`` with this reason.
     case presentationCancelled
     
     /// The user has selected a supplementary action (see

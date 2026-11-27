@@ -21,12 +21,11 @@ import SwiftUI
 /// An `ErrorAction` defines a button in an error alert, or in an
 /// ``ErrorPresentationView``, displayed by `FlowErrorKit`.
 ///
-/// You cannot execute an action directly: use
-/// ``FlowError/performAction(_:)`` instead. If this looks inconvenient to
-/// you, please consider that `FlowError` preserves important invariants,
-/// such as making sure that only one error action is ever run. Actions
-/// cannot be executed directly, so that it is not possible to mess with
-/// the state of the view that created the `FlowError`.
+/// An error action cannot be executed directly: it is performed by its
+/// flow error, with ``FlowError/performAction(_:)``. This lets the flow
+/// error preserve important invariants, such as making sure that only
+/// one error action is ever run, and protects the state of the view that
+/// created the flow error.
 ///
 /// ## Topics
 ///

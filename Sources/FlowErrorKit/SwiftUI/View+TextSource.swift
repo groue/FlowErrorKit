@@ -9,11 +9,14 @@ extension View {
     /// For example:
     ///
     /// ```swift
+    /// import FlowErrorKit
+    /// import SwiftUI
+    ///
     /// struct MyView: View {
     ///     @State private var errorPresentation: ErrorPresentation?
     ///
     ///     var body: some View {
-    ///         content.alert(
+    ///         ContentView().alert(
     ///             errorPresentation?.title,
     ///             item: $errorPresentation,
     ///             actions: { presentation in

@@ -87,6 +87,10 @@ public struct ErrorPresentation: ~Sendable {
     public let title: TextSource
     
     /// An optional subtitle.
+    ///
+    /// When both the flow error and the creator of the presentation
+    /// provide a title, the title of the flow error is the ``title`` of
+    /// the presentation, and the other one is the subtitle.
     public let subtitle: TextSource?
     
     /// The error message.

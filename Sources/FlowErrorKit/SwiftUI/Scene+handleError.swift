@@ -1,15 +1,11 @@
 import SwiftUI
 
 extension Scene {
-    /// Registers a flow error handler.
+    /// Registers a flow error handler in the scene.
     ///
     /// The handler is invoked whenever a flow error is presented by
     /// a view of the scene, including views in sheets and full screen
-    /// covers. It is invoked after the handlers registered in the views
-    /// with ``SwiftUICore/View/handleError(with:)``, and before the
-    /// ready-made handling of `CancellationError`, `CocoaError`, and
-    /// `URLError` provided by FlowErrorKit (see
-    /// ``SwiftUICore/EnvironmentValues/errorHandler``).
+    /// covers.
     ///
     /// For example:
     ///

@@ -33,6 +33,8 @@ The four screenshots in `Documentation/Images` come from the app in `Documentati
     swift Documentation/ReadMeApp/FrameScreenshot.swift <device-type> <screenshot.png> Documentation/Images/<name>.png
     ```
 
+The DocC screenshot `DefaultErrorHandlerDEBUG.png`, and its `DefaultErrorHandlerDEBUG~dark.png` variant, in `Sources/FlowErrorKit/Documentation.docc/Resources`, come from the "Unhandled Error" screen of the same app, after a tap on its Save button. Take them in the **Debug** configuration, so that the alert includes the "DEBUG" description, and frame them with the same script.
+
 ## 4. Publish
 
 Commit all changes, then tag the release and push:

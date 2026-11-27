@@ -3,6 +3,51 @@ import SwiftUI
 // MARK: - ErrorPresentationView
 
 /// A view that conveys an error state.
+///
+/// An error presentation view is usually displayed by the
+/// ``FlowErrorPresenter/errorPresentationView`` presenter, in place of
+/// the content of a view that presents a flow error. To configure it,
+/// use ``FlowErrorPresenter/errorPresentationView(_:)``:
+///
+/// ```swift
+/// import FlowErrorKit
+/// import SwiftUI
+///
+/// struct MyView: View {
+///     @State private var flowError: FlowError?
+///
+///     var body: some View {
+///         ContentView().presentError(
+///             $flowError,
+///             with: .errorPresentationView { errorPresentation in
+///                 ErrorPresentationView(
+///                     errorPresentation,
+///                     cancelButton: .visible)
+///             })
+///     }
+/// }
+/// ```
+///
+/// When the user selects a button, the corresponding action of the flow
+/// error is performed. The buttons are then disabled, unless the flow
+/// error was created with the `allowMultipleActionExecutions` flag (see
+/// ``FlowError/init(error:allowMultipleActionExecutions:)``).
+///
+/// In the DEBUG configuration, the error presentation view also
+/// describes the presented error, so that developers can see what went
+/// wrong.
+///
+/// ## Topics
+///
+/// ### Creating an Error Presentation View
+///
+/// - ``init(_:cancelButton:footer:)``
+///
+/// ### Building Custom Error Views
+///
+/// - ``ErrorPresentationLabel``
+/// - ``ErrorPresentationDescription``
+/// - ``ErrorPresentationActions``
 public struct ErrorPresentationView<Footer: View>: View {
     private var errorPresentation: ErrorPresentation
     private var cancelButton: Visibility
@@ -47,6 +92,7 @@ public struct ErrorPresentationView<Footer: View>: View {
 ///
 /// ```swift
 /// import FlowErrorKit
+/// import SwiftUI
 ///
 /// struct MyView: View {
 ///     @State private var flowError: FlowError?
@@ -94,6 +140,7 @@ public struct ErrorPresentationLabel: View {
 ///
 /// ```swift
 /// import FlowErrorKit
+/// import SwiftUI
 ///
 /// struct MyView: View {
 ///     @State private var flowError: FlowError?
@@ -114,6 +161,9 @@ public struct ErrorPresentationLabel: View {
 ///     }
 /// }
 /// ```
+///
+/// In the DEBUG configuration, it also describes the presented error, so
+/// that developers can see what went wrong.
 public struct ErrorPresentationDescription: View {
     private var errorPresentation: ErrorPresentation
     @ScaledMetric private var spacing = 2
@@ -157,6 +207,7 @@ public struct ErrorPresentationDescription: View {
 ///
 /// ```swift
 /// import FlowErrorKit
+/// import SwiftUI
 ///
 /// struct MyView: View {
 ///     @State private var flowError: FlowError?
@@ -177,6 +228,11 @@ public struct ErrorPresentationDescription: View {
 ///     }
 /// }
 /// ```
+///
+/// When the user selects a button, the corresponding action of the flow
+/// error is performed. The buttons are then disabled, unless the flow
+/// error was created with the `allowMultipleActionExecutions` flag (see
+/// ``FlowError/init(error:allowMultipleActionExecutions:)``).
 public struct ErrorPresentationActions: View {
     /// Whether the actions of a flow error are hidden.
     private struct ActionsVisibility {

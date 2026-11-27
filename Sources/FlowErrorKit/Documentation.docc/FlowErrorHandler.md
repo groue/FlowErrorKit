@@ -4,11 +4,13 @@ A type that handles flow errors by performing side effects and determining how a
 
 ## Overview
 
-`FlowErrorHandler` is designed for SwiftUI integration. When an error handler enters the SwiftUI environment with the ``SwiftUICore/View/handleError(with:)`` view modifier, it can handle all presented flow errors, as specified by its ``handle(_:)`` method. For example:
+`FlowErrorHandler` is designed for SwiftUI integration. When an error handler enters the SwiftUI environment with the ``SwiftUICore/View/handleError(with:)`` view modifier, it handles the flow errors presented by the modified view and its subviews, as specified by its ``handle(_:)-(FlowError)`` method. For example:
 
 ```swift
 // MyErrorHandler.swift
 import FlowErrorKit
+
+struct MyError: Error { }
 
 struct MyErrorHandler: FlowErrorHandler {
     func handle(_ flowError: FlowError) -> FlowErrorHandling {
@@ -41,17 +43,18 @@ Besides choosing how an error is presented, an error handler can add or remove t
 
 As multiple error handlers enter the SwiftUI environment, they build a **chain of error handlers**.
 
-When a flow error happens, the ``handle(_:)`` method of the first handler in the chain is called. It allows the handler to decide whether:
+When a view presents a flow error, the ``handle(_:)-(FlowError)`` method of the first handler in the chain is called. It allows the handler to decide whether:
 
 - The flow error is passed to the next handler in the chain.
 - The flow error is presented to the user (ignoring remaining handlers in the chain).
 - The flow error is cancelled (not presented, ignoring remaining handlers in the chain).
 
-At the end of the chain, if no error handler has presented or cancelled the error, a default presentation is performed.
-
-The position of a handler in the chain depends on where it is registered in the view hierarchy: handlers registered closer to the presenting view come first. In the following sample code, the error presented by `MyView` is handled by `ErrorHandlerC` first, then `ErrorHandlerB`, and finally `ErrorHandlerA`.
+The position of a handler in the chain depends on where it is registered: handlers registered closer to the presenting view come first, and handlers registered on the scene come after the handlers registered on views. In the following sample code, the error presented by `MyView` is handled by `ErrorHandlerC` first, then `ErrorHandlerB`, and finally `ErrorHandlerA`.
 
 ```swift
+import FlowErrorKit
+import SwiftUI
+
 struct MyContainerView: View {
     var body: some View {
         MyView()
@@ -67,12 +70,9 @@ struct MyView: View {
         Button("Try Me") {
             performFailableAction()
         }
-        // Capture and present the flow error
-        
         // Handled by ErrorHandlerC first, then ErrorHandlerB,
         // and finally ErrorHandlerA.
         .presentError($flowError, with: .alert)
-
         .handleError(with: ErrorHandlerC())
     }
 
@@ -85,6 +85,59 @@ struct MyView: View {
     }
 }
 ```
+
+The chain always ends with the ready-made handling of `CancellationError`, `CocoaError`, and `URLError` provided by FlowErrorKit. Because it comes last, the registered handlers can customize the handling of those errors. Finally, if no error handler has presented or cancelled the flow error, it is presented with a default presentation (see ``FlowErrorHandling/errorPresentation``).
+
+The chain of handlers that apply to a view is available in the ``SwiftUICore/EnvironmentValues/errorHandler`` environment value.
+
+### Adjusting Actions and Presentations
+
+An error handler can pass or present a modified flow error, built with methods such as:
+
+- ``FlowError/droppingRetryAction()`` removes the retry action of errors that retrying cannot fix.
+- ``FlowError/appendingAction(_:role:action:)-(LocalizedStringKey,_,_)`` adds a supplementary action, such as an "Open Settings" action for errors that report a missing permission.
+- ``FlowError/withError(_:)`` replaces the error, so that the next handlers in the chain can handle an underlying error (see ``FlowErrorHandlerChain/init(_:)``).
+
+For example, the handler below asks the user to update the application when the server rejects its requests with the 426 Upgrade Required status code:
+
+```swift
+import FlowErrorKit
+import UIKit
+
+struct ServerError: Error {
+    var statusCode: Int
+}
+
+struct UpgradeRequiredErrorHandler: FlowErrorHandler {
+    var appStoreURL: URL
+
+    func handle(_ flowError: FlowError) -> FlowErrorHandling {
+        guard let error = flowError.error as? ServerError,
+              error.statusCode == 426
+        else {
+            return .pass(flowError)
+        }
+
+        // Retrying won't help: drop the retry action, and let
+        // the user open the App Store.
+        let presentedFlowError = flowError
+            .droppingRetryAction()
+            .appendingAction("Update") {
+                UIApplication.shared.open(appStoreURL)
+            }
+
+        return .present(ErrorPresentation(
+            flowError: presentedFlowError,
+            title: "Update Required")
+            .withMessage("""
+                Please install the latest version \
+                of the application.
+                """))
+    }
+}
+```
+
+An error handler must not perform the actions of the flow error: the presenter and the user do (see ``handle(_:)-(FlowError)``).
 
 ### Observable Objects as FlowError Handlers
 
@@ -166,13 +219,13 @@ extension FlowErrorHandler where Self == FlowErrorHandlerChain {
     static var appErrorHandlers: Self {
         FlowErrorHandlerChain([
             MyErrorHandler(),
-            CLErrorHandler(),
+            UpgradeRequiredErrorHandler(appStoreURL: appStoreURL),
         ])
     }
 }
 ```
 
-The chain only contains the handlers of the application: the ready-made handling of `CancellationError`, `CocoaError`, and `URLError` provided by FlowErrorKit always comes last, after all registered handlers (see ``SwiftUICore/EnvironmentValues/errorHandler``).
+The chain only contains the handlers of the application: the ready-made handling provided by FlowErrorKit always comes last, after all registered handlers.
 
 This chain is then registered in the app, and in every preview:
 

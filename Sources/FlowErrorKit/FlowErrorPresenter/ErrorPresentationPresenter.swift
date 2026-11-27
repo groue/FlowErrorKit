@@ -80,14 +80,16 @@ extension FlowErrorPresenter {
     ///
     /// ```swift
     /// import FlowErrorKit
+    /// import SwiftUI
     ///
     /// struct MyView: View {
     ///     @State private var flowError: FlowError?
     ///     @State private var isLoading = false
     ///
     ///     var body: some View {
-    ///         ContentView()
-    ///             .presentError($flowError, with: .errorPresentationView { errorPresentation in
+    ///         ContentView().presentError(
+    ///             $flowError,
+    ///             with: .errorPresentationView { errorPresentation in
     ///                 ErrorPresentationView(errorPresentation, footer: {
     ///                     ProgressView().opacity(isLoading ? 1 : 0)
     ///                 })
@@ -114,6 +116,7 @@ extension FlowErrorPresenter where Self == ErrorPresentationPresenter<ErrorPrese
     ///
     /// ```swift
     /// import FlowErrorKit
+    /// import SwiftUI
     ///
     /// struct NewsView: View {
     ///     @State private var news: [Article] = []

@@ -94,6 +94,9 @@ There are two exceptions:
 - When a flow error is programmatically dismissed, no error action is run. If needed, the cancel action can be performed explicitly, as below:
 
     ```swift
+    import FlowErrorKit
+    import SwiftUI
+
     struct MyView: View {
         @State private var flowError: FlowError?
 
@@ -116,7 +119,9 @@ There are two exceptions:
 > ```swift
 > // Dismiss the screen whatever happens.
 > flowError = FlowError(error: error)
->     .appendingAction("Delete Document", role: .destructive) { deleteDocument() }
+>     .appendingAction("Delete Document", role: .destructive) {
+>         deleteDocument()
+>     }
 >     .finally { dismiss() }
 >
 > // Dismiss the screen after deletion only.

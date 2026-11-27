@@ -9,6 +9,9 @@ extension Text {
     /// For example:
     ///
     /// ```swift
+    /// import FlowErrorKit
+    /// import SwiftUI
+    ///
     /// struct ErrorBanner: View {
     ///     var errorPresentation: ErrorPresentation
     ///
@@ -21,10 +24,6 @@ extension Text {
     ///             if let message = errorPresentation.message {
     ///                 Text(message)
     ///             }
-    ///             #if DEBUG
-    ///             // Help developers see what went wrong.
-    ///             Text(verbatim: "DEBUG: \(errorPresentation.flowError.error)")
-    ///             #endif
     ///         }
     ///     }
     /// }

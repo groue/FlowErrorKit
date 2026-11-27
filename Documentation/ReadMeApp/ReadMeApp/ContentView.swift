@@ -10,6 +10,9 @@ struct ContentView: View {
                 NavigationLink("Error Presentation") {
                     NewsView()
                 }
+                NavigationLink("Unhandled Error") {
+                    UnhandledErrorView()
+                }
             }
             .navigationTitle("ReadMeApp")
         }

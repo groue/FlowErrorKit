@@ -25,30 +25,33 @@ For example, your application may:
 - <doc:Usage>
 - ``FlowError``
 
-### Handling Errors from SwiftUI views
-
-Handling a flow error means performing side effects and determining how the error should be presented to the user.
-
-- ``SwiftUICore/View/handleError(with:)``
-- ``SwiftUICore/View/handleError(handling:)``
-- ``SwiftUICore/View/handleError(ofType:matching:handling:)``
-- ``SwiftUI/Scene/handleError(with:)``
-- ``FlowErrorHandler``
-
-### Presenting Errors from SwiftUI views
+### Presenting Errors from SwiftUI Views
 
 Presenting a flow error means displaying the error in SwiftUI views.
 
 - ``SwiftUICore/View/presentError(_:with:)-(_,FlowErrorPresenter)``
-- ``ErrorPresentation``
-- ``ErrorPresentationView``
-- ``ErrorPresentationLabel``
-- ``ErrorPresentationDescription``
-- ``ErrorPresentationActions``
 - ``FlowErrorPresenter``
-- ``TextSource``
+
+### Handling Errors from SwiftUI Views
+
+Handling a flow error means performing side effects and determining how the error should be presented to the user.
+
+- ``SwiftUICore/View/handleError(with:)``
+- ``SwiftUI/Scene/handleError(with:)``
+- ``SwiftUICore/View/handleError(handling:)``
+- ``SwiftUICore/View/handleError(ofType:matching:handling:)``
+- ``FlowErrorHandler``
 
 ### SwiftUI Environment
 
 - ``SwiftUICore/EnvironmentValues/errorHandler``
 - ``FlowErrorHandlerChain``
+
+### Supporting Types
+
+- ``ErrorPresentation``
+- ``ErrorPresentationView``
+- ``ErrorPresentationLabel``
+- ``ErrorPresentationDescription``
+- ``ErrorPresentationActions``
+- ``TextSource``

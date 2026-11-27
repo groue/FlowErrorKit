@@ -200,6 +200,22 @@ extension AlertFlowErrorPresenter: FlowErrorPresenter {
 
 extension FlowErrorPresenter where Self == AlertFlowErrorPresenter {
     /// A presenter that presents an alert when a flow error occurs.
+    ///
+    /// For example:
+    ///
+    /// ```swift
+    /// import FlowErrorKit
+    /// import SwiftUI
+    ///
+    /// struct MyView: View {
+    ///     @State private var flowError: FlowError?
+    ///
+    ///     var body: some View {
+    ///         ContentView()
+    ///             .presentError($flowError, with: .alert)
+    ///     }
+    /// }
+    /// ```
     public static var alert: Self {
         AlertFlowErrorPresenter()
     }

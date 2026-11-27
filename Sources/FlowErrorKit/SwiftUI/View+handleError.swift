@@ -30,6 +30,9 @@ extension EnvironmentValues {
     /// errors are properly handled:
     ///
     /// ```swift
+    /// import FlowErrorKit
+    /// import SwiftUI
+    ///
     /// struct MyView: View {
     ///     @Environment(\.errorHandler) var errorHandler
     ///
@@ -60,37 +63,38 @@ extension EnvironmentValues {
 extension View {
     /// Registers a flow error handler in the view.
     ///
-    /// The handler becomes the first invoked handler whenever a flow error
-    /// is presented by this view, or one of its subviews.
+    /// Whenever a flow error is presented by the modified view, or one of
+    /// its subviews, the handler is invoked before the handlers registered
+    /// by the enclosing views.
     ///
     /// For example:
     ///
     /// ```swift
-    /// // MyErrorHandler.swift
     /// import FlowErrorKit
-    ///
-    /// struct MyErrorHandler: FlowErrorHandler {
-    ///     func handle(_ flowError: FlowError) -> FlowErrorHandling {
-    ///         if flowError.error is MyError {
-    ///             // Specific handling for MyError
-    ///             return .present(ErrorPresentation(
-    ///                 flowError: flowError,
-    ///                 title: "My Error Occurred"))
-    ///         } else {
-    ///             return .pass(flowError)
-    ///         }
-    ///     }
-    /// }
-    ///
-    /// // MyView.swift
-    /// import FlowErrorKit
+    /// import SwiftUI
     ///
     /// struct MyView: View {
+    ///     @State private var flowError: FlowError?
+    ///
     ///     var body: some View {
     ///         ContentView()
+    ///             .presentError($flowError, with: .alert)
     ///             .handleError(with: MyErrorHandler())
     ///     }
     /// }
+    /// ```
+    ///
+    /// In the sample code above, the flow errors presented with
+    /// `presentError` are handled by `MyErrorHandler`, because the
+    /// `presentError` modifier comes before the `handleError` modifier.
+    ///
+    /// When several `handleError` modifiers are applied, their handlers
+    /// are invoked in the same order as the modifiers:
+    ///
+    /// ```swift
+    /// ContentView()
+    ///     .handleError(with: ErrorHandlerA()) // Invoked first
+    ///     .handleError(with: ErrorHandlerB()) // Invoked next
     /// ```
     public func handleError(with handler: some FlowErrorHandler) -> some View {
         transformEnvironment(\.errorHandler) {
@@ -104,10 +108,14 @@ extension View {
     ///
     /// ```swift
     /// import FlowErrorKit
+    /// import SwiftUI
     ///
     /// struct MyView: View {
+    ///     @State private var flowError: FlowError?
+    ///
     ///     var body: some View {
     ///         ContentView()
+    ///             .presentError($flowError, with: .alert)
     ///             .handleError { flowError in
     ///                 if flowError.error is MyError {
     ///                     // Specific handling for MyError
@@ -122,8 +130,13 @@ extension View {
     /// }
     /// ```
     ///
-    /// This convenience method registers a flow error handler. For more
-    /// information, see ``FlowErrorHandler``.
+    /// In the sample code above, the flow errors presented with
+    /// `presentError` are handled by the closure, because the
+    /// `presentError` modifier comes before the `handleError` modifier.
+    ///
+    /// This convenience method registers a flow error handler, like the
+    /// ``handleError(with:)`` method. For more information about the value
+    /// returned by the closure, see ``FlowErrorHandler``.
     ///
     /// - Parameters:
     ///   - handling: A closure that returns how the flow error should
@@ -134,16 +147,21 @@ extension View {
         self.handleError(with: AnyFlowErrorHandler(handling))
     }
     
-    /// Registers a closure that handles flow errors of type `Err`.
+    /// Registers a closure that handles the flow errors of type `Err` that
+    /// match a predicate.
     ///
     /// For example:
     ///
     /// ```swift
     /// import FlowErrorKit
+    /// import SwiftUI
     ///
     /// struct MyView: View {
+    ///     @State private var flowError: FlowError?
+    ///
     ///     var body: some View {
     ///         ContentView()
+    ///             .presentError($flowError, with: .alert)
     ///             .handleError(ofType: MyError.self) { flowError, _ in
     ///                 // Specific handling for MyError
     ///                 return .present(ErrorPresentation(
@@ -154,23 +172,28 @@ extension View {
     /// }
     /// ```
     ///
-    /// This convenience method registers a flow error handler. For more
-    /// information, see ``FlowErrorHandler``.
+    /// In the sample code above, the flow errors presented with
+    /// `presentError` are handled by the closure, because the
+    /// `presentError` modifier comes before the `handleError` modifier.
+    ///
+    /// This convenience method registers a flow error handler, like the
+    /// ``handleError(with:)`` method. For more information about the value
+    /// returned by the closure, see ``FlowErrorHandler``.
     ///
     /// - Parameters:
     ///   - errorType: The type of handled errors.
-    ///   - matching: A closure that returns whether the error should
+    ///   - predicate: A closure that returns whether the error should
     ///     be handled.
     ///   - handling: A closure that returns how the flow error should
     ///     be handled.
     public func handleError<Err: Swift.Error>(
         ofType errorType: Err.Type,
-        matching: @escaping @MainActor (Err) -> Bool = { _ in true },
+        matching predicate: @escaping @MainActor (Err) -> Bool = { _ in true },
         handling: @escaping @MainActor (FlowError, Err) -> FlowErrorHandling
     ) -> some View {
         self.handleError { flowError in
             guard let error = flowError.error as? Err,
-                  matching(error)
+                  predicate(error)
             else {
                 return .pass(flowError)
             }

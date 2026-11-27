@@ -60,7 +60,7 @@ import SwiftUI
 ///   - A `deinit` does not tell it either: your code does not control
 ///     when it runs.
 ///
-///   A presenter that can not tell when to discard a flow error should
+///   A presenter that cannot tell when to discard a flow error should
 ///   document that the application can discard it, with
 ///   ``FlowError/discard(_:)`` and
 ///   ``ErrorCancelReason/presentationCancelled``, when the application
