@@ -2,6 +2,10 @@
 
 An error handling library
 
+## Links
+
+- [GitHub repository](https://github.com/groue/FlowErrorKit)
+
 ## Overview
 
 FlowErrorKit helps you catch runtime errors, define how they should be presented in the user interface, and how to respond to user actions after an error has occurred.
