@@ -1,6 +1,6 @@
 ---
 name: flowerrorkit
-description: Rules and pitfalls for SwiftUI code that uses FlowErrorKit (FlowError, ErrorPresentation, ErrorPresentationView, FlowErrorHandler, FlowErrorHandlerChain, FlowErrorPresenter, presentError, handleError, errorHandler, onCancel, onRetry, finally, appendingAction, withError, allowMultipleActionExecutions, canPerformAction). Load before catching or presenting errors in SwiftUI views, writing or registering flow error handlers (including in the App and in #Preview), unwrapping errors that wrap other errors, writing error actions, or writing error titles and messages.
+description: Rules and pitfalls for SwiftUI code that uses FlowErrorKit (FlowError, ErrorPresentation, ErrorPresentationView, ErrorPresentationLabel, ErrorPresentationDescription, ErrorPresentationActions, FlowErrorHandler, FlowErrorHandlerChain, FlowErrorPresenter, presentError, handleError, errorHandler, onCancel, onRetry, finally, appendingAction, withError, allowMultipleActionExecutions, canPerformAction). Load before catching or presenting errors in SwiftUI views, writing or registering flow error handlers (including in the App and in #Preview), unwrapping errors that wrap other errors, writing error actions, or writing error titles and messages.
 ---
 
 # FlowErrorKit

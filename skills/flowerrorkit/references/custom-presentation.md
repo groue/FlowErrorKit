@@ -6,12 +6,12 @@ errors" in SKILL.md):
 - `.presentError($flowError, with: .alert)`, by default.
 - `.presentError($flowError, with: .errorPresentationView)`, when the
   content of the screen could not be loaded, or
-  `.errorPresentationView { errorPresentation in ... }` for a customized
-  `ErrorPresentationView`.
+  `.errorPresentationView { errorPresentation in ... }` for any other
+  view displayed in place of the content.
 
 Custom presentation is needed when the app needs a presentation style
-that neither an alert nor an `ErrorPresentationView` provides (a banner,
-a toast…).
+that is neither an alert nor a view displayed in place of the content
+(a banner, a toast…).
 
 Choosing not to present an error, and passing it to
 `errorHandler.handle(_:)` so that handlers run their side effects, is
