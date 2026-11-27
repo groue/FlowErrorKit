@@ -176,8 +176,13 @@ an action. Follow the rules below.
   `presentError`, never before. Otherwise, the content loads twice after
   a successful retry.
 - To customize the error view, use `.errorPresentationView {
-  errorPresentation in ... }`, and display `errorPresentation` in an
-  `ErrorPresentationView`.
+  errorPresentation in ... }`, and display `errorPresentation` with the
+  view of your choice. You can use `ErrorPresentationView`, compose a
+  `ContentUnavailableView` from
+  `ErrorPresentationLabel(errorPresentation)`,
+  `ErrorPresentationDescription(errorPresentation)`, and
+  `ErrorPresentationActions(errorPresentation, cancelButton:)`, or
+  render any other view.
 - The error view hides the content, even when the content becomes
   available. Set `flowError = nil` as soon as the content is available.
   Otherwise, the user is stuck on the error.

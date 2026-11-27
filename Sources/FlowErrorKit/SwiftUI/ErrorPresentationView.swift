@@ -4,29 +4,9 @@ import SwiftUI
 
 /// A view that conveys an error state.
 public struct ErrorPresentationView<Footer: View>: View {
-    /// Whether the actions of a flow error are hidden.
-    private struct ActionsVisibility {
-        var flowErrorID: ObjectIdentifier
-        var isHidden: Bool
-        
-        @MainActor init(_ flowError: FlowError) {
-            self.flowErrorID = flowError.id
-            self.isHidden = !flowError.canPerformAction
-        }
-    }
-    
     private var errorPresentation: ErrorPresentation
     private var cancelButton: Visibility
     private var footer: Footer
-    
-    /// The visibility of actions, determined when a flow error is first
-    /// displayed.
-    ///
-    /// It is not determined in the initializer, which runs during the
-    /// body of the parent view: reading the observable
-    /// ``FlowError/canPerformAction`` there would invalidate the parent
-    /// view when an action is performed.
-    @State private var actionsVisibility: ActionsVisibility?
     
     /// Creates a view that displays an error presentation.
     ///
@@ -48,18 +28,211 @@ public struct ErrorPresentationView<Footer: View>: View {
     }
     
     public var body: some View {
-        ContentUnavailableView.error(
-            errorPresentation,
-            actionsHidden: actionsHidden,
-            cancelButton: cancelButton,
-            footer: { footer })
-        .onChange(of: errorPresentation.flowError.id, initial: true) {
-            actionsVisibility = ActionsVisibility(errorPresentation.flowError)
+        ContentUnavailableView {
+            ErrorPresentationLabel(errorPresentation)
+        } description: {
+            ErrorPresentationDescription(errorPresentation)
+        } actions: {
+            ErrorPresentationActions(errorPresentation, cancelButton: cancelButton)
+            footer
+        }
+    }
+}
+
+// MARK: - ErrorPresentationLabel
+
+/// A view that displays the title and image of an error presentation.
+///
+/// For example:
+///
+/// ```swift
+/// import FlowErrorKit
+///
+/// struct MyView: View {
+///     @State private var flowError: FlowError?
+///
+///     var body: some View {
+///         ContentView()
+///             .presentError(
+///                 $flowError,
+///                 with: .errorPresentationView { errorPresentation in
+///                     ContentUnavailableView {
+///                         ErrorPresentationLabel(errorPresentation)
+///                     } description: {
+///                         ErrorPresentationDescription(errorPresentation)
+///                     } actions: {
+///                         ErrorPresentationActions(errorPresentation)
+///                     }
+///                 })
+///     }
+/// }
+/// ```
+public struct ErrorPresentationLabel: View {
+    private var errorPresentation: ErrorPresentation
+    
+    /// Creates a view that displays the title and image of an
+    /// error presentation.
+    public init(_ errorPresentation: ErrorPresentation) {
+        self.errorPresentation = errorPresentation
+    }
+    
+    public var body: some View {
+        Label {
+            Text(errorPresentation.title)
+        } icon: {
+            errorPresentation.image
+        }
+    }
+}
+
+// MARK: - ErrorPresentationDescription
+
+/// A view that displays the subtitle and message of an
+/// error presentation.
+///
+/// For example:
+///
+/// ```swift
+/// import FlowErrorKit
+///
+/// struct MyView: View {
+///     @State private var flowError: FlowError?
+///
+///     var body: some View {
+///         ContentView()
+///             .presentError(
+///                 $flowError,
+///                 with: .errorPresentationView { errorPresentation in
+///                     ContentUnavailableView {
+///                         ErrorPresentationLabel(errorPresentation)
+///                     } description: {
+///                         ErrorPresentationDescription(errorPresentation)
+///                     } actions: {
+///                         ErrorPresentationActions(errorPresentation)
+///                     }
+///                 })
+///     }
+/// }
+/// ```
+public struct ErrorPresentationDescription: View {
+    private var errorPresentation: ErrorPresentation
+    @ScaledMetric private var spacing = 2
+    
+    /// Creates a view that displays the subtitle and message of an
+    /// error presentation.
+    public init(_ errorPresentation: ErrorPresentation) {
+        self.errorPresentation = errorPresentation
+    }
+    
+    public var body: some View {
+        VStack(spacing: spacing) {
+            if let subtitle = errorPresentation.subtitle {
+                // Distinguish the subtitle from the text below.
+                Text(subtitle)
+                    .fontWeight(hasTextBelowSubtitle ? .semibold : nil)
+            }
+            if let message = errorPresentation.message {
+                Text(message)
+            }
+#if DEBUG
+            Text(verbatim: "DEBUG: \(errorPresentation.flowError.error)")
+#endif
         }
     }
     
+    private var hasTextBelowSubtitle: Bool {
+#if DEBUG
+        true
+#else
+        errorPresentation.message != nil
+#endif
+    }
+}
+
+// MARK: - ErrorPresentationActions
+
+/// A view that displays the action buttons of an error presentation.
+///
+/// For example:
+///
+/// ```swift
+/// import FlowErrorKit
+///
+/// struct MyView: View {
+///     @State private var flowError: FlowError?
+///
+///     var body: some View {
+///         ContentView()
+///             .presentError(
+///                 $flowError,
+///                 with: .errorPresentationView { errorPresentation in
+///                     ContentUnavailableView {
+///                         ErrorPresentationLabel(errorPresentation)
+///                     } description: {
+///                         ErrorPresentationDescription(errorPresentation)
+///                     } actions: {
+///                         ErrorPresentationActions(errorPresentation)
+///                     }
+///                 })
+///     }
+/// }
+/// ```
+public struct ErrorPresentationActions: View {
+    /// Whether the actions of a flow error are hidden.
+    private struct ActionsVisibility {
+        var flowErrorID: ObjectIdentifier
+        var isHidden: Bool
+        
+        @MainActor init(_ flowError: FlowError) {
+            self.flowErrorID = flowError.id
+            self.isHidden = !flowError.canPerformAction
+        }
+    }
+    
+    private var errorPresentation: ErrorPresentation
+    private var cancelButtonVisibility: Visibility
+    
+    /// The visibility of actions, determined when a flow error is first
+    /// displayed.
+    ///
+    /// It is not determined in the initializer, which runs during the
+    /// body of the parent view: reading the observable
+    /// ``FlowError/canPerformAction`` there would invalidate the parent
+    /// view when an action is performed.
+    @State private var actionsVisibility: ActionsVisibility?
+    
+    /// Creates a view that displays the action buttons of an
+    /// error presentation.
+    ///
+    /// - parameter errorPresentation: An error presentation.
+    /// - parameter cancelButton: The visibility of the cancel button:
+    ///   hidden unless `.visible`. This parameter is ignored when the view
+    ///   starts presenting a flow error that cannot perform any
+    ///   action. In this case, all action buttons are hidden.
+    public init(
+        _ errorPresentation: ErrorPresentation,
+        cancelButton: Visibility = .automatic)
+    {
+        self.errorPresentation = errorPresentation
+        self.cancelButtonVisibility = cancelButton
+    }
+    
+    public var body: some View {
+        Group {
+            if !actionsHidden {
+                buttons.disabled(!flowError.canPerformAction)
+            }
+        }
+        .onChange(of: flowError.id, initial: true) {
+            actionsVisibility = ActionsVisibility(flowError)
+        }
+    }
+    
+    private var flowError: FlowError {
+        errorPresentation.flowError
+    }
+    
     private var actionsHidden: Bool {
-        let flowError = errorPresentation.flowError
         if let actionsVisibility, actionsVisibility.flowErrorID == flowError.id {
             return actionsVisibility.isHidden
         } else {
@@ -68,177 +241,53 @@ public struct ErrorPresentationView<Footer: View>: View {
             return !flowError.canPerformAction
         }
     }
-}
-
-// MARK: - ContentUnavailableView
-
-extension ContentUnavailableView {
-    /// Creates a `ContentUnavailableView` instance that conveys an
-    /// error state.
-    ///
-    /// - parameter errorPresentation: An error presentation.
-    /// - parameter actionsHidden: Whether the action buttons are hidden.
-    /// - parameter cancelButton: The visibility of the cancel button.
-    /// - parameter footer: A view to display below the action buttons.
-    @MainActor
-    fileprivate static func error<Footer: View>(
-        _ errorPresentation: ErrorPresentation,
-        actionsHidden: Bool,
-        cancelButton: Visibility,
-        @ViewBuilder footer: () -> Footer)
-    -> ContentUnavailableView<Label, Description, Actions>
-    where Label == ErrorPresentationContent<Footer>.Label,
-          Description == ErrorPresentationContent<Footer>.Description,
-          Actions == ErrorPresentationContent<Footer>.Actions
-    {
-        let content = ErrorPresentationContent<Footer>(
-            errorPresentation: errorPresentation,
-            actionsHidden: actionsHidden,
-            cancelButton: cancelButton,
-            footer: footer())
-        
-        return ContentUnavailableView(
-            label: content.label,
-            description: content.description,
-            actions: content.actions)
-    }
-}
-
-// MARK: - ErrorPresentationContent
-
-/// The label, description, and actions of the `ContentUnavailableView`
-/// displayed by ``ErrorPresentationView``.
-@MainActor
-struct ErrorPresentationContent<Footer: View> {
-    var errorPresentation: ErrorPresentation
-    var actionsHidden: Bool
-    var cancelButton: Visibility
-    var footer: Footer
     
-    struct Label: View {
-        var title: TextSource
-        var image: Image
-        
-        var body: some View {
-            SwiftUI.Label {
-                Text(title)
-            } icon: {
-                image
-            }
-        }
-    }
-    
-    struct Description: View {
-        var subtitle: TextSource?
-        var message: TextSource?
-        var error: any Error
-        @ScaledMetric private var spacing = 2
-        
-        var body: some View {
-            VStack(spacing: spacing) {
-                if let subtitle {
-                    // Distinguish the subtitle from the text below.
-                    Text(subtitle)
-                        .fontWeight(hasTextBelowSubtitle ? .semibold : nil)
-                }
-                if let message {
-                    Text(message)
-                }
-#if DEBUG
-                Text(verbatim: "DEBUG: \(error)")
-#endif
-            }
-        }
-
-        private var hasTextBelowSubtitle: Bool {
-#if DEBUG
-            true
-#else
-            message != nil
-#endif
-        }
-    }
-    
-    struct Actions: View {
-        var flowError: FlowError
-        var actionsHidden: Bool
-        var cancelButtonVisibility: Visibility
-        var footer: Footer
-        
-        var body: some View {
-            if !actionsHidden {
-                Group {
-                    ForEach(flowError.supplementaryActions) { action in
-                        actionButton(action)
-                    }
-                    
-                    if let retryAction = flowError.retryAction {
-                        if cancelButtonVisibility == .visible {
-                            actionButton(retryAction)
-                        } else {
-                            actionButton(retryAction)
-                                .buttonStyle(.borderedProminent)
-                        }
-                    }
-                    
-                    if cancelButtonVisibility == .visible {
-                        cancelButton()
-                            .buttonStyle(.borderedProminent)
-                    }
-                }
-                .disabled(!flowError.canPerformAction)
-            }
-            
-            footer
+    @ViewBuilder
+    private var buttons: some View {
+        ForEach(flowError.supplementaryActions) { action in
+            actionButton(action)
         }
         
-        func actionButton(_ action: ErrorAction) -> some View {
-            Button(role: action.role.map(ButtonRole.init)) {
-                flowError.performAction(action)
-            } label: {
-                Text(action.title)
-            }
-        }
-        
-        func cancelButton() -> some View {
-            Button(role: .cancel) {
-                flowError.performCancelAction()
-            } label: {
-                Text(cancelTitle)
-            }
-        }
-        
-        var cancelTitle: TextSource {
-            if let cancelTitle = flowError.cancelTitle {
-                return cancelTitle
-            } else if flowError.retryAction == nil && flowError.supplementaryActions.isEmpty {
-                // Only possible action is cancel.
-                return .localizedStringResource(.ok)
+        if let retryAction = flowError.retryAction {
+            if cancelButtonVisibility == .visible {
+                actionButton(retryAction)
             } else {
-                return .localizedStringResource(.cancel)
+                actionButton(retryAction)
+                    .buttonStyle(.borderedProminent)
             }
+        }
+        
+        if cancelButtonVisibility == .visible {
+            cancelButton
+                .buttonStyle(.borderedProminent)
         }
     }
     
-    func label() -> Self.Label {
-        Label(
-            title: errorPresentation.title,
-            image: errorPresentation.image)
+    private func actionButton(_ action: ErrorAction) -> some View {
+        Button(role: action.role.map(ButtonRole.init)) {
+            flowError.performAction(action)
+        } label: {
+            Text(action.title)
+        }
     }
     
-    func description() -> Self.Description {
-        Description(
-            subtitle: errorPresentation.subtitle,
-            message: errorPresentation.message,
-            error: errorPresentation.flowError.error)
+    private var cancelButton: some View {
+        Button(role: .cancel) {
+            flowError.performCancelAction()
+        } label: {
+            Text(cancelTitle)
+        }
     }
     
-    func actions() -> Self.Actions {
-        Actions(
-            flowError: errorPresentation.flowError,
-            actionsHidden: actionsHidden,
-            cancelButtonVisibility: cancelButton,
-            footer: footer)
+    private var cancelTitle: TextSource {
+        if let cancelTitle = flowError.cancelTitle {
+            return cancelTitle
+        } else if flowError.retryAction == nil && flowError.supplementaryActions.isEmpty {
+            // Only possible action is cancel.
+            return .localizedStringResource(.ok)
+        } else {
+            return .localizedStringResource(.cancel)
+        }
     }
 }
 
@@ -316,6 +365,21 @@ struct PreviewError: Error { }
                 .appendingAction("Repair") { },
             verbatimTitle: "An Error Occurred",
             message: "Lorem ipsum dolor sit amet, consectetur adipiscing elit."))
+}
+
+#Preview("Components") {
+    let errorPresentation = ErrorPresentation(
+        flowError: FlowError(error: PreviewError()).onRetry { },
+        verbatimTitle: "An Error Occurred",
+        message: "Could not frobnicate the fubar.")
+    
+    ContentUnavailableView {
+        ErrorPresentationLabel(errorPresentation)
+    } description: {
+        ErrorPresentationDescription(errorPresentation)
+    } actions: {
+        ErrorPresentationActions(errorPresentation, cancelButton: .visible)
+    }
 }
 
 #Preview("Footer") {
