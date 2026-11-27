@@ -183,7 +183,7 @@ struct ErrorPresentationTests {
     }
     
     @Test
-    func withMessage_preserves_title_and_system_image() {
+    func withMessage_preserves_title_and_image() {
         let flowError = FlowError(error: TestError()).withTitle(verbatim: "Failure")
         let resource = LocalizedStringResource("Message")
         let presentation = ErrorPresentation(
@@ -193,7 +193,7 @@ struct ErrorPresentationTests {
             .withMessage(resource)
         #expect(presentation.title == .verbatim("Failure"))
         #expect(presentation.subtitle == .localizedStringKey("Title"))
-        #expect(presentation.systemImage == "star")
+        #expect(presentation.image == Image(systemName: "star"))
         #expect(presentation.message == .localizedStringResource(resource))
     }
     
@@ -336,5 +336,19 @@ struct ErrorPresentationTests {
             flowError: FlowError(error: TestError()),
             verbatimTitle: "Title",
             message: "Message"))
+    }
+    
+    @Test
+    func image() {
+        let flowError = FlowError(error: TestError())
+        #expect(ErrorPresentation(flowError: flowError).image == ErrorPresentation.defaultImage)
+        #expect(ErrorPresentation(flowError: flowError, image: Image("star")).image == Image("star"))
+        #expect(ErrorPresentation(flowError: flowError, systemImage: "star").image == Image(systemName: "star"))
+        #expect(ErrorPresentation(flowError: flowError, title: "Title", image: Image("star")).image == Image("star"))
+        #expect(ErrorPresentation(flowError: flowError, title: LocalizedStringResource("Title"), systemImage: "star").image == Image(systemName: "star"))
+        #expect(ErrorPresentation(flowError: flowError, title: "Title" as String, message: "Message", image: Image("star")).image == Image("star"))
+        #expect(ErrorPresentation(flowError: flowError, message: "Message" as String, systemImage: "star").image == Image(systemName: "star"))
+        #expect(ErrorPresentation(flowError: flowError, verbatimTitle: "Title", image: Image(systemName: "star")).image == Image(systemName: "star"))
+        #expect(Image("star") != Image(systemName: "star"))
     }
 }

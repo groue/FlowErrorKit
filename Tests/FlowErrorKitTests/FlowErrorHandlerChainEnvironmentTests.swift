@@ -92,7 +92,7 @@ struct FlowErrorHandlerChainEnvironmentTests {
             Issue.record("Expected .present")
             return
         }
-        #expect(presentation.systemImage == CustomURLErrorHandler.systemImage)
+        #expect(presentation.image == Image(systemName: CustomURLErrorHandler.systemImage))
     }
 }
 #endif

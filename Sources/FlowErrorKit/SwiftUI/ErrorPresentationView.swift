@@ -117,13 +117,13 @@ struct ErrorPresentationContent<Footer: View> {
     
     struct Label: View {
         var title: TextSource
-        var systemImage: String
+        var image: Image
         
         var body: some View {
             SwiftUI.Label {
                 Text(title)
             } icon: {
-                Image(systemName: systemImage)
+                image
             }
         }
     }
@@ -223,7 +223,7 @@ struct ErrorPresentationContent<Footer: View> {
     func label() -> Self.Label {
         Label(
             title: errorPresentation.title,
-            systemImage: errorPresentation.systemImage)
+            image: errorPresentation.image)
     }
     
     func description() -> Self.Description {

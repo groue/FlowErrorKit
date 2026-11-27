@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+- **Breaking change**: `ErrorPresentation` replaces its `systemImage: String` property with `image: Image`, and `defaultSystemImage` with `defaultImage`. Initializers keep their `systemImage:` parameter, and accept an `Image` as well: `ErrorPresentation(flowError: flowError, image: Image(.networkError))`.
+
 ## 0.2.0
 
 Released November 27, 2026
