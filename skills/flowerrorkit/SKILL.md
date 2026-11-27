@@ -90,21 +90,23 @@ The rules below follow from this identity:
 ## Presenting flow errors
 
 Present the flow errors that the user must see with
-`presentError(_:with:)`, and pick one of the two built-in presentations:
+`presentError(_:with:)`, and pick one of the two built-in
+presentations, unless the application defines and prefers a custom
+`FlowErrorPresenter`:
 
 - By default, present an alert: `.presentError($flowError, with: .alert)`.
   This fits errors of actions (save, send, delete…), and errors of
   content that the view displays anyway (a web page, a list…).
 - When the content of the screen could not be loaded, and the view has
   nothing better to show than the error, present the error in place:
-  `.presentError($flowError, with: $errorPresentation)` (see [In-place
-  presentation](#in-place-presentation)).
+  `.presentError($flowError, with: .errorPresentationView)` (see
+  [In-place presentation](#in-place-presentation)).
 
-Never display the result of `errorHandler.handle(_:)` yourself, and
-never write your own presenter, unless the rare cases described in
+Never display the result of `errorHandler.handle(_:)` yourself, unless
+the rare cases described in
 [references/custom-presentation.md](references/custom-presentation.md)
-apply, and neither built-in presentation fits. Read that file before
-taking this path.
+apply, and no ready-made presenter usable with `.presentError(_:with:)`
+fits. Read that file before taking this path.
 
 ### Errors that are not presented
 
@@ -158,21 +160,27 @@ struct NewsView: View {
 
 ## In-place presentation
 
-An in-place presentation displays the error in the view itself, as an
-`ErrorPresentationView` (for example in place of content that could not
-be loaded). Unlike an alert, it does not go away when the user selects
-an action.
+`.presentError($flowError, with: .errorPresentationView)` displays an
+`ErrorPresentationView` in place of the view content (for example,
+content that could not be loaded), until `flowError` is set to nil.
+Unlike an alert, the error view does not go away when the user selects
+an action. Follow the rules below.
 
-With `presentError($flowError, with: $errorPresentation)`, display
-`errorPresentation` in an `ErrorPresentationView`, and follow the rules
-below.
-
-- A handler may cancel the presentation, and then `errorPresentation`
-  stays nil. In this case, display what the view displays when there is
-  no error: its regular content, even empty or blank (an empty list, a
-  blank web view), or a placeholder (a `ProgressView`, `Color.clear`).
-  Every view has something to display in this case: never present the
-  error yourself for this reason.
+- Apply `presentError` to the content that the error replaces. The
+  modifiers applied before `presentError` are replaced as well: apply
+  the modifiers that must remain visible (`navigationTitle`, `toolbar`,
+  etc.) after `presentError`.
+- When the error view goes away, the content is created again: the
+  state of its subviews is reset, and its `task` and `onAppear`
+  modifiers run again. Apply the modifiers that load the content after
+  `presentError`, never before. Otherwise, the content loads twice after
+  a successful retry.
+- To customize the error view, use `.errorPresentationView {
+  errorPresentation in ... }`, and display `errorPresentation` in an
+  `ErrorPresentationView`.
+- The error view hides the content, even when the content becomes
+  available. Set `flowError = nil` as soon as the content is available.
+  Otherwise, the user is stuck on the error.
 - To load a value that may fail, load from `.onAppear` with a guard so
   that it runs once, and catch there. Give the view some content before
   loading (a `ProgressView`, `Color.clear`): `onAppear` does not run on
@@ -184,22 +192,19 @@ below.
       @Environment(RecipeClient.self) private var client
       @State private var recipe: Recipe?
       @State private var flowError: FlowError?
-      @State private var errorPresentation: ErrorPresentation?
       @State private var didStartLoading = false
 
       var body: some View {
           Group {
               if let recipe {
                   RecipeContent(recipe: recipe)
-              } else if let errorPresentation {
-                  ErrorPresentationView(errorPresentation)
               } else {
                   // While loading, and when a handler cancels the
                   // presentation of the error.
                   ProgressView()
               }
           }
-          .presentError($flowError, with: $errorPresentation)
+          .presentError($flowError, with: .errorPresentationView)
           .onAppear {
               guard !didStartLoading else { return }
               didStartLoading = true
@@ -214,7 +219,7 @@ below.
               flowError = FlowError(error: error)
                   .withTitle("The recipe could not be loaded")
                   .onRetry {
-                      // Removes the error presentation while loading.
+                      // Removes the error view while loading.
                       flowError = nil
                       Task { await load() }
                   }
@@ -223,8 +228,8 @@ below.
   }
   ```
 
-- After the user selects an action, the `ErrorPresentationView` remains
-  on screen, with disabled buttons. Make sure that every action that
+- After the user selects an action, the error view remains on screen,
+  with disabled buttons. Make sure that every action that
   can be presented dismisses the screen, or clears or replaces the flow
   error binding (`flowError = nil`, or `flowError = FlowError(error:
   newError)`). Otherwise (for example "Open Settings", appended by a

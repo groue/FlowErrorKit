@@ -157,7 +157,7 @@ import SwiftUI
     ///       closure can run several times. This is useful when the error
     ///       is displayed in an ``ErrorPresentationView``, and the user may
     ///       need to select an action again (see
-    ///       ``SwiftUICore/View/presentError(_:with:)-(_,Binding<ErrorPresentation?>)``).
+    ///       ``FlowErrorPresenter/errorPresentationView``).
     public init(
         error: any Error,
         allowMultipleActionExecutions: Bool = false)

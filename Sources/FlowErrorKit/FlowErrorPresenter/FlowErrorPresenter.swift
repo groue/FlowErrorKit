@@ -75,6 +75,8 @@ import SwiftUI
 /// ### Getting built-in flow error presenters
 ///
 /// - ``alert``
+/// - ``errorPresentationView``
+/// - ``errorPresentationView(_:)``
 ///
 /// ### Creating custom flow error presenters
 ///
@@ -84,6 +86,7 @@ import SwiftUI
 /// ### Supporting Types
 ///
 /// - ``AlertFlowErrorPresenter``
+/// - ``ErrorPresentationPresenter``
 @MainActor
 public protocol FlowErrorPresenter {
     /// The type of view modifier.

@@ -5,19 +5,12 @@ import SwiftUI
 struct NewsView: View {
     @State private var news: [Article] = []
     @State private var flowError: FlowError?
-    @State private var errorPresentation: ErrorPresentation?
 
     var body: some View {
-        Group {
-            if let errorPresentation {
-                ErrorPresentationView(errorPresentation)
-            } else {
-                List(news) { article in Text(article.title) }
-            }
-        }
-        .navigationTitle("News")
-        .presentError($flowError, with: $errorPresentation)
-        .task { await load() }
+        List(news) { article in Text(article.title) }
+            .presentError($flowError, with: .errorPresentationView)
+            .navigationTitle("News")
+            .task { await load() }
     }
 
     func load() async {

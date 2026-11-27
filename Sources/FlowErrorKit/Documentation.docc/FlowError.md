@@ -84,10 +84,10 @@ As long as the flow error is presented by the SwiftUI view, it is guaranteed tha
 - If the user selects a supplementary action, the cancel action is run first, with the ``ErrorCancelReason/supplementaryActionPerformed`` reason. This includes supplementary actions appended by a ``FlowErrorHandler``.
 - If a view wants to present a new flow error while a previous one is still presented on screen, the outcome depends on the presentation:
     - With an alert (`.presentError($flowError, with: .alert)`), the new error is not presented, and its cancel action is run.
-    - With an error presentation binding (`.presentError($flowError, with: $errorPresentation)`), the new error replaces the previous one, and the cancel action of the previous one is run. If a ``FlowErrorHandler`` cancels the presentation of the new error, the previous one remains presented, and the cancel action of the new one is run.
+    - With an ``ErrorPresentationView`` (`.presentError($flowError, with: .errorPresentationView)`), the new error replaces the previous one, and the cancel action of the previous one is run. If a ``FlowErrorHandler`` cancels the presentation of the new error, the previous one remains presented, and the cancel action of the new one is run.
 - If the view that presents the error disappears, the outcome depends on the presentation:
     - With an alert, the alert is removed, the flow error binding is set to nil, and the cancel action is run.
-    - With an error presentation binding, nothing happens: the error presentation remains in the binding, and the application remains responsible for displaying it, and for removing it from the screen.
+    - With an ``ErrorPresentationView``, nothing happens: the flow error remains in the binding, the error view is displayed again when the view comes back on screen (for example, when the user switches to another tab and back), and the application remains responsible for removing it, by setting the binding to nil.
 
 There are two exceptions:
 

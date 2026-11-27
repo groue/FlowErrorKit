@@ -1,68 +1,70 @@
 # Custom error presentation
 
-The built-in presentations cover nearly every need (see "Presenting flow
+The built-in presenters cover nearly every need (see "Presenting flow
 errors" in SKILL.md):
 
 - `.presentError($flowError, with: .alert)`, by default.
-- `.presentError($flowError, with: $errorPresentation)`, when the content
-  of the screen could not be loaded. When a handler cancels the
-  presentation, the view displays its regular content, even empty or
-  blank, or a placeholder (a `ProgressView`, `Color.clear`).
+- `.presentError($flowError, with: .errorPresentationView)`, when the
+  content of the screen could not be loaded, or
+  `.errorPresentationView { errorPresentation in ... }` for a customized
+  `ErrorPresentationView`.
 
-Custom presentation is a rare exception. Take this path only in one of
-these cases, after checking that no built-in presentation fits:
-
-- The app needs a presentation style that neither an alert nor an
-  `ErrorPresentationView` provides (a banner, a toast…). Write a
-  `FlowErrorPresenter`, and use it with `presentError(_:with:)`.
-- The user explicitly asks to present errors without
-  `presentError(_:with:)`.
-
-"The view has nothing to display when a handler cancels the
-presentation" is not one of these cases: display a placeholder.
+Custom presentation is needed when the app needs a presentation style
+that neither an alert nor an `ErrorPresentationView` provides (a banner,
+a toast…).
 
 Choosing not to present an error, and passing it to
 `errorHandler.handle(_:)` so that handlers run their side effects, is
-not custom presentation either: see "Errors that are not presented" in
+not custom presentation: see "Errors that are not presented" in
 SKILL.md.
 
-## Presenter contract
+Custom presentation can be achieved with a custom `FlowErrorPresenter`
+that can be used with `presentError(_:with:)`, or with custom code when
+the requested feature would not profit from the `presentError(_:with:)`
+API.
 
-Implement a `FlowErrorPresenter` that follows the contract documented
-in the protocol, or a view that follows the same contract. In summary:
+In all cases, you must follow the contract documented by the
+`FlowErrorPresenter` protocol, which generally describes how a
+`Binding<FlowError?>` must be handled. In summary:
 
-- Perform the actions of a flow error with
-  `flowError.performAction(action)` or `flowError.performCancelAction()`,
-  and only once, unless the flow error was created with
-  `allowMultipleActionExecutions: true`. `flowError.canPerformAction`
-  tells whether an action can still be performed.
-- Discard the flow errors whose presentation is cancelled by a handler,
-  with `flowError.discard(.presentationCancelled)`.
-- Discard a pending flow error, with
-  `flowError.discard(.presentationCancelled)`, when the user can no
-  longer select any of its actions, but only when the presenter can
-  tell it deterministically. Never discard it from `.onDisappear`, nor
-  from a `deinit`.
+- The role of error presentation is to let the user perform the actions
+  of a flow error, and, whenever possible, to never leave a flow error
+  unattended.
+- Read the chain of handlers with `@Environment(\.errorHandler)`, and
+  call `errorHandler.handle(flowError)` whenever the bound flow error
+  changes. All flow error instances must be handled, once, as soon as
+  possible.
+- When the result of `errorHandler.handle(flowError)` has a nil
+  `errorPresentation` property, it means that a handler cancelled the
+  presentation: you must call `flowError.discard(.presentationCancelled)`,
+  and adjust the view according to the desired behavior of the custom
+  presentation.
+- When the custom presentation has no error to present, make sure the
+  flow error binding is set to nil, so that the caller knows that no
+  error is presented.
+- When an error is presented, and the custom presentation allows the
+  user to perform actions, call `flowError.performAction(action)` or
+  `flowError.performCancelAction()` in response to user interactions.
+  Check the observable `flowError.canPerformAction` property to hide or
+  disable interactive elements, according to the desired behavior of
+  the custom presentation.
+- When a new flow error is set while another one is presented, either
+  replace the presented one, or ignore the new one. In both cases, call
+  `discard(.presentationCancelled)` on the flow error that is not
+  presented.
+- When the binding is set to nil from the parent view, stop presenting
+  the error, but do not perform any action. It is the code that
+  programmatically cancels the error presentation that is responsible
+  for performing actions, if it needs to: this is not the concern of the
+  custom presentation.
+- When the view reaches a state where it is no longer possible for the
+  app user to select any action of a presented flow error, call
+  `discard(.presentationCancelled)` on it, and set the binding to nil if
+  the desired behavior of the custom presentation is to stop presenting
+  the error in such a case. Do so only when you can tell it for sure:
+  never from `.onDisappear`, nor from a `deinit`.
 
-  Why: when the user switches to another tab and back, an in-place
-  presentation comes back on screen, and the user can still select an
-  action. Your code does not control when a `deinit` runs.
-- Expect a new flow error while another one is presented, and decide
-  what to do in a way that follows the rules of SKILL.md.
-
-Why: a presenter lets the user perform the actions of a flow error,
-and, whenever possible, never leaves a flow error unattended.
-
-## Presenting an error in place without `presentError(_:with:)`
-
-The rules about actions in "In-place presentation" (SKILL.md) still
-apply, and the view follows the presenter contract above:
-
-- In the catch clause, call `errorHandler.handle(flowError)`, and
-  display the returned `errorPresentation` in an
-  `ErrorPresentationView`.
-- When the result has no `errorPresentation` (a handler cancelled the
-  presentation), call `flowError.discard(.presentationCancelled)`, then
-  display `ErrorPresentation(flowError: flowError)`.
-- Before replacing or removing a displayed error presentation, call
-  `errorPresentation.flowError.discard(.presentationCancelled)`.
+  Why: when the user switches to another tab and back, a presentation
+  that was displayed in the view comes back on screen, and the user can
+  still select an action. Your code does not control when a `deinit`
+  runs.

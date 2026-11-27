@@ -36,7 +36,6 @@ Handling a flow error means performing side effects and determining how the erro
 Presenting a flow error means displaying the error in SwiftUI views.
 
 - ``SwiftUICore/View/presentError(_:with:)-(_,FlowErrorPresenter)``
-- ``SwiftUICore/View/presentError(_:with:)-(_,Binding<ErrorPresentation?>)``
 - ``ErrorPresentation``
 - ``ErrorPresentationView``
 - ``FlowErrorPresenter``

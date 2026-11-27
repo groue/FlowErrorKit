@@ -7,7 +7,6 @@ struct BasicErrorPresentationView: View {
     private let failureProbability = 1.0
     @State private var emoji: String?
     @State private var flowError: FlowError?
-    @State private var errorPresentation: ErrorPresentation?
     
     init(
         file: StaticString = #fileID,
@@ -17,25 +16,19 @@ struct BasicErrorPresentationView: View {
     }
     
     var body: some View {
-        Group {
-            if let errorPresentation {
-                ErrorPresentationView(errorPresentation)
-            } else {
-                VStack {
-                    EmojiView(emoji: emoji)
-                    
-                    Button("Pick an Emoji") { pickEmoji() }
-                        .buttonStyle(.bordered)
-                    
-                    Text("Failure probability: \(failureProbability, format: .percent)")
-                        .foregroundStyle(.secondary)
-                        .font(.callout)
-                }
-            }
+        VStack {
+            EmojiView(emoji: emoji)
+            
+            Button("Pick an Emoji") { pickEmoji() }
+                .buttonStyle(.bordered)
+            
+            Text("Failure probability: \(failureProbability, format: .percent)")
+                .foregroundStyle(.secondary)
+                .font(.callout)
         }
         
         // Capture and present the flow error
-        .presentError($flowError, with: $errorPresentation)
+        .presentError($flowError, with: .errorPresentationView)
         
         .sourceLocation(sourceLocation: sourceLocation)
     }

@@ -66,24 +66,20 @@ import SwiftUI
 struct NewsView: View {
     @State private var news: [Article] = []
     @State private var flowError: FlowError?
-    @State private var errorPresentation: ErrorPresentation?
 
     var body: some View {
-        Group {
-            if let errorPresentation {
-                ErrorPresentationView(errorPresentation)
-            } else {
-                List(news) { article in Text(article.title) }
-            }
+        List(news) { article in
+            Text(article.title)
         }
-        .presentError($flowError, with: $errorPresentation)
+        .presentError($flowError, with: .errorPresentationView)
         .task { await load() }
     }
 
     func load() async {
         do {
             news = try await fetchNews()
-            flowError = nil // Success: remove the error presentation
+            // Success: remove the error presentation
+            flowError = nil
         } catch {
             flowError = FlowError(error: error)
                 .withTitle("Could not load the news")

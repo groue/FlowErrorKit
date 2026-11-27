@@ -13,7 +13,7 @@ struct ProgrammaticDismissalTests {
     @MainActor @Observable
     final class Model {
         var flowError: FlowError?
-        var errorPresentation: ErrorPresentation?
+        var presentedFlowErrorID: FlowError.ID?
         var cancelReasons: [ErrorCancelReason] = []
 
         var cancelLog: [String] = []
@@ -43,11 +43,15 @@ struct ProgrammaticDismissalTests {
         var model: Model
 
         var body: some View {
-            Color.clear.presentError(
-                Binding(get: { model.flowError }, set: { model.flowError = $0 }),
-                with: Binding(
-                    get: { model.errorPresentation },
-                    set: { model.errorPresentation = $0 }))
+            Color.clear
+                .onAppear { model.presentedFlowErrorID = nil }
+                .presentError(
+                    Binding(get: { model.flowError }, set: { model.flowError = $0 }),
+                    with: .errorPresentationView { errorPresentation in
+                        Color.clear.onAppear {
+                            model.presentedFlowErrorID = errorPresentation.flowError.id
+                        }
+                    })
         }
     }
 
@@ -69,9 +73,9 @@ struct ProgrammaticDismissalTests {
         view.layoutSubtreeIfNeeded()
     }
 
-    // GIVEN a flow error presented with an error presentation binding,
+    // GIVEN a flow error presented with an error presentation view,
     // WHEN the flow error is set to nil,
-    // THEN the presentation is cleared, and no action is performed.
+    // THEN the presenting view is restored, and no action is performed.
     @Test
     func errorPresentation_programmatic_dismissal_performs_no_action() {
         let model = Model()
@@ -79,14 +83,15 @@ struct ProgrammaticDismissalTests {
         defer { window.close() }
         flush(hostingView)
 
-        model.flowError = model.makeFlowError()
+        let flowError = model.makeFlowError()
+        model.flowError = flowError
         flush(hostingView)
-        #expect(model.errorPresentation != nil)
+        #expect(model.presentedFlowErrorID == flowError.id)
         #expect(model.cancelReasons.isEmpty)
 
         model.flowError = nil
         flush(hostingView)
-        #expect(model.errorPresentation == nil)
+        #expect(model.presentedFlowErrorID == nil)
         #expect(model.cancelReasons.isEmpty)
     }
     

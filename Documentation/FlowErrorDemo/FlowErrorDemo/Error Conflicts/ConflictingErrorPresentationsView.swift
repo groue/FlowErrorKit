@@ -21,7 +21,6 @@ struct ConflictingErrorPresentationsView: View {
     @State var count = 0
     @State var events: [String] = []
     @State var flowError: FlowError?
-    @State var errorPresentation: ErrorPresentation?
     
     var body: some View {
         VStack {
@@ -65,15 +64,14 @@ struct ConflictingErrorPresentationsView: View {
             
             Divider()
             
-            if let errorPresentation {
-                ErrorPresentationView(errorPresentation, cancelButton: .visible, footer: {
-                    errorButtons()
+            Color.clear
+                .frame(maxHeight: .infinity)
+                .presentError($flowError, with: .errorPresentationView { errorPresentation in
+                    ErrorPresentationView(errorPresentation, cancelButton: .visible, footer: {
+                        errorButtons()
+                    })
                 })
-            } else {
-                Color.clear.frame(maxHeight: .infinity)
-            }
         }
-        .presentError($flowError, with: $errorPresentation)
         .handleError(ofType: IgnoredError.self) { _, _ in
             return .cancel
         }

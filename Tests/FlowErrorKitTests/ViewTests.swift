@@ -41,10 +41,21 @@ struct ViewTests {
     }
     
     @Test
-    func presentError_with_errorPresentation() {
+    func presentError_with_errorPresentationView() {
         // A test that won't compile if we introduce a breaking change
         let flowError: Binding<FlowError?> = .constant(nil)
-        let errorPresentation: Binding<ErrorPresentation?> = .constant(nil)
-        _ = TestView().presentError(flowError, with: errorPresentation)
+        _ = TestView().presentError(flowError, with: .errorPresentationView)
+    }
+    
+    @Test
+    func presentError_with_custom_errorPresentationView() {
+        // A test that won't compile if we introduce a breaking change
+        let flowError: Binding<FlowError?> = .constant(nil)
+        _ = TestView().presentError(flowError, with: .errorPresentationView { errorPresentation in
+            ErrorPresentationView(errorPresentation, cancelButton: .visible) {
+                ProgressView()
+            }
+            .disabled(true)
+        })
     }
 }

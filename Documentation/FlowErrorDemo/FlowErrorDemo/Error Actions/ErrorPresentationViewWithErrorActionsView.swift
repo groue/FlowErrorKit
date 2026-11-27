@@ -10,7 +10,6 @@ struct ErrorPresentationViewWithErrorActionsView: View {
     @Environment(\.dismiss) var dismiss
     @State private var emoji: String?
     @State private var flowError: FlowError?
-    @State private var errorPresentation: ErrorPresentation?
     
     /// - Parameters:
     ///   - error: The thrown error.
@@ -29,25 +28,21 @@ struct ErrorPresentationViewWithErrorActionsView: View {
     }
     
     var body: some View {
-        Group {
-            if let errorPresentation {
-                ErrorPresentationView(errorPresentation, cancelButton: .visible)
-            } else {
-                VStack {
-                    EmojiView(emoji: emoji)
-                    
-                    Button("Pick an Emoji") { pickEmoji() }
-                        .buttonStyle(.bordered)
-                    
-                    Text("Failure probability: \(failureProbability, format: .percent)")
-                        .foregroundStyle(.secondary)
-                        .font(.callout)
-                }
-            }
+        VStack {
+            EmojiView(emoji: emoji)
+            
+            Button("Pick an Emoji") { pickEmoji() }
+                .buttonStyle(.bordered)
+            
+            Text("Failure probability: \(failureProbability, format: .percent)")
+                .foregroundStyle(.secondary)
+                .font(.callout)
         }
         
         // Capture and present the flow error
-        .presentError($flowError, with: $errorPresentation)
+        .presentError($flowError, with: .errorPresentationView { errorPresentation in
+            ErrorPresentationView(errorPresentation, cancelButton: .visible)
+        })
         
         .sourceLocation(sourceLocation: sourceLocation)
     }

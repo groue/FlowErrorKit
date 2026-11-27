@@ -4,8 +4,19 @@ import SwiftUI
 
 /// A view that conveys an error state.
 ///
-/// You get the displayed error presentation by presenting a flow error
-/// with ``SwiftUICore/View/presentError(_:with:)-(_,Binding<ErrorPresentation?>)``.
+/// The ``FlowErrorPresenter/errorPresentationView`` presenter displays
+/// this view in place of the view content when a flow error occurs. To
+/// customize the view, return it from the closure of
+/// ``FlowErrorPresenter/errorPresentationView(_:)``:
+///
+/// ```swift
+/// ContentView()
+///     .presentError($flowError, with: .errorPresentationView { errorPresentation in
+///         ErrorPresentationView(errorPresentation) {
+///             Button("Contact Support") { ... }
+///         }
+///     })
+/// ```
 ///
 /// The view displays the retry and supplementary actions, and
 /// optionally the cancel action.

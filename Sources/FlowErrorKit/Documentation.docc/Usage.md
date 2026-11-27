@@ -133,7 +133,7 @@ struct MyView: View {
 }
 ```
 
-There are other error presentation options, such as displaying an ``ErrorPresentationView`` instead of an alert (see ``SwiftUICore/View/presentError(_:with:)-(_,Binding<ErrorPresentation?>)``).
+There are other error presentation options, such as displaying an ``ErrorPresentationView`` instead of an alert (see ``FlowErrorPresenter/errorPresentationView``).
 
 > Tip: Make sure a SwiftUI view presents all flow errors, without exception, with an alert or another technique:
 >
