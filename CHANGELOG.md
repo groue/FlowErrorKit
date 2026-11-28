@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.3.1
+
+Released November 28, 2026
+
+- `FlowError.discard(_:)` defaults its reason to `.presentationCancelled`: `flowError.discard()`.
+- Documentation improvements.
+
 ## 0.3.0
 
 Released November 27, 2026
