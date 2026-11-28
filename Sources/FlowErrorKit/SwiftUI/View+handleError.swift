@@ -12,8 +12,8 @@ extension EnvironmentValues {
     /// It is built from the flow error handlers registered with
     /// ``SwiftUICore/View/handleError(with:)`` and
     /// ``SwiftUI/Scene/handleError(with:)``, followed by the ready-made
-    /// handling of `CancellationError`, `CocoaError`, and `URLError`
-    /// provided by FlowErrorKit.
+    /// handling that FlowErrorKit provides for `CancellationError`,
+    /// `CocoaError`, and `URLError`.
     ///
     /// This ready-made handling comes last, so that the handlers you
     /// register can customize the handling of those errors.
@@ -52,7 +52,7 @@ extension EnvironmentValues {
     ///
     /// An error passed to `errorHandler.handle(_:)` should not also be
     /// turned into a flow error displayed with
-    /// ``SwiftUICore/View/presentError(_:with:)-(_,FlowErrorPresenter)``:
+    /// ``SwiftUICore/View/presentError(_:with:)``:
     /// the handlers would run twice, and so would their side effects.
     public internal(set) var errorHandler: FlowErrorHandlerChain {
         get { self[FlowErrorHandlerChainKey.self] }

@@ -45,7 +45,7 @@ import SwiftUI
 ///
 /// - ``ErrorActionRole``
 @MainActor public final class ErrorAction: Identifiable {
-    /// The action title ("Cancel", "Retry", etc.)
+    /// The action title ("Retry", "Open Settings", etc.)
     public let title: TextSource
     
     /// The action role.

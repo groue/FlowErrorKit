@@ -4,7 +4,7 @@
 
 ## Overview
 
-In the typical setup, a `FlowError` is created when an `Error` is caught, and the view presents the error with the ``SwiftUICore/View/presentError(_:with:)-(_,FlowErrorPresenter)`` method:
+In the typical setup, a `FlowError` is created when an `Error` is caught, and the view presents the error with the ``SwiftUICore/View/presentError(_:with:)`` method:
 
 ```swift
 import FlowErrorKit
@@ -36,7 +36,7 @@ struct MyView: View {
 
 A good practice is to always create a `FlowError` from a `catch` clause, or from a callback that delivers each error once. Think of a `FlowError` as an event: an error was caught, and now it needs to be handled.
 
-In particular, avoid creating flow errors in a view `body`, which SwiftUI evaluates many times, or from errors stored for later use, such as a `Result`. The same error could then be handled several times. And each time, the error handlers of the application could perform their side effects again, such as signing the user out (see ``FlowErrorHandler``).
+Avoid creating or handling flow errors from a view `body`, which SwiftUI evaluates many times. The same error could then be handled several times, and the flow error handlers registered in the SwiftUI environment could perform their side effects several times (see ``FlowErrorHandler``).
 
 ### Error Actions
 
@@ -77,26 +77,18 @@ In particular, avoid creating flow errors in a view `body`, which SwiftUI evalua
 
 ### Detailed Actions Handling
 
-As long as the flow error is presented by the SwiftUI view, it is guaranteed that one error action will be performed:
+By default, once a flow error is given to ``SwiftUICore/View/presentError(_:with:)``, error actions are executed at most once:
 
-- The performed action is the one selected by the user in the presented alert, or in the ``ErrorPresentationView``.
+- The performed action is the one selected by the user in the presentation.
 - If a ``FlowErrorHandler`` cancels the error presentation, then the cancel action is automatically run.
-- If the user selects a supplementary action, the cancel action is run first, with the ``ErrorCancelReason/supplementaryActionPerformed`` reason. This includes supplementary actions appended by a ``FlowErrorHandler``.
-- If a view wants to present a new flow error while a previous one is still presented on screen, the outcome depends on the presentation:
-    - With an alert (`.presentError($flowError, with: .alert)`), the new error is not presented, and its cancel action is run.
-    - With an ``ErrorPresentationView`` (`.presentError($flowError, with: .errorPresentationView)`), the new error replaces the previous one, and the cancel action of the previous one is run. If a ``FlowErrorHandler`` cancels the presentation of the new error, the previous one remains presented, and the cancel action of the new one is run.
-- If the view that presents the error disappears, the outcome depends on the presentation:
-    - With an alert, the alert is removed, the flow error binding is set to nil, and the cancel action is run.
-    - With an ``ErrorPresentationView``, nothing happens: the flow error remains in the binding, the error view is displayed again when the view comes back on screen (for example, when the user switches to another tab and back), and the application remains responsible for removing it, by setting the binding to nil.
+- If the user selects a supplementary action, then the cancel action is run before the supplementary action.
+- If a view wants to present a new flow error while a previous one is still presented on screen, then one of the errors is not presented and its cancel action is run (which one depends on the presenter provided to ``SwiftUICore/View/presentError(_:with:)``).
 
-There are two exceptions:
+There are cases where no action is run, or actions are run multiple times:
 
-- When a flow error is programmatically dismissed, no error action is run. If needed, the cancel action can be performed explicitly, as below:
+- When a flow error is programmatically dismissed, no error action is run. The cancel action can be explicitly performed if deemed necessary, as below:
 
     ```swift
-    import FlowErrorKit
-    import SwiftUI
-
     struct MyView: View {
         @State private var flowError: FlowError?
 
@@ -106,13 +98,17 @@ There are two exceptions:
         }
 
         func dismissError() {
-            flowError?.discard(.presentationCancelled)
+            flowError?.discard()
             flowError = nil
         }
     }
     ```
 
-- ⚠️ When SwiftUI prevents the error presentation (because an unexpected alert or sheet is already presented), no error action is run. This is a known issue, and a future version of `FlowErrorKit` should address it.
+- Some presentations do not offer every action. For example, the ``FlowErrorPresenter/errorPresentationView`` presentation hides the Cancel button by default, and stays idle until the flow error binding is set to nil. Unless the user selects the retry action or a supplementary action, no action is performed.
+
+- Some presentations allow the application user to run multiple actions. For example, the ``FlowErrorPresenter/errorPresentationView`` presentation remains on screen until the flow error binding is set to nil. When such a case is expected, set the `allowMultipleActionExecutions` flag when you create the `FlowError` instance with ``FlowError/init(error:allowMultipleActionExecutions:)``, so that action buttons do not become disabled after the user has selected one.
+
+- When SwiftUI itself prevents the error presentation, for example because an alert that is not managed by FlowErrorKit is already presented, no error action is run. It is the programmer's responsibility to avoid such conflicts.
 
 > Tip: As described above, the cancel action does not only run when the user dismisses the error. So code that must run whatever the outcome fits best in `finally`, and code that is specific to an action fits best in the closure of this action:
 >

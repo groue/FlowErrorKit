@@ -12,7 +12,7 @@ Error handling with FlowErrorKit is performed in three steps:
 
 ### Catch and present errors
 
-A SwiftUI view catches errors, turns them into a ``FlowError``, and presents them with the ``SwiftUICore/View/presentError(_:with:)-(_,FlowErrorPresenter)`` method. For example, the view below presents errors with an alert:
+A SwiftUI view catches errors, turns them into a ``FlowError``, and presents them with the ``SwiftUICore/View/presentError(_:with:)`` method. For example, the view below presents errors with an alert:
 
 ```swift
 import FlowErrorKit
@@ -126,7 +126,7 @@ Below is a screenshot that shows the default presentation of an unhandled error 
 
 @Image(source: "DefaultErrorHandlerDEBUG.png", alt: "An iPhone that displays a profile form, and a standard alert. The title is \"An Error Occurred\". The message is \"DEBUG: ServerError(statusCode: 401)\", the raw description of the unhandled error. The alert has one OK button.")
 
-Custom error handlers can alter the default behavior, and choose if and how an error should be presented. They conform to the ``FlowErrorHandler`` protocol, and must be registered in the SwiftUI environment with the ``SwiftUICore/View/handleError(with:)`` view modifier. Once registered in the SwiftUI environment, an error handler can handle all errors caught in the SwiftUI view hierarchy below.
+Custom error handlers can alter the default behavior, and choose if and how an error should be presented. They conform to the ``FlowErrorHandler`` protocol, and must be registered in the SwiftUI environment with the ``SwiftUICore/View/handleError(with:)`` view modifier. Once registered in the SwiftUI environment, an error handler can handle all flow errors presented in the SwiftUI view hierarchy below.
 
 One important task of flow error handlers is to define which message and buttons should be presented when a SwiftUI view displays the error. For example, the application below registers a `CLErrorHandler` that is responsible for all instances of `CLError` throughout the application:
 

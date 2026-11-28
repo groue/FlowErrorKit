@@ -11,7 +11,7 @@ extension AlertFlowErrorPresenter: FlowErrorPresenter {
     /// The view modifier that presents flow errors with an alert.
     ///
     /// You don't create this type directly: use
-    /// ``SwiftUICore/View/presentError(_:with:)-(_,FlowErrorPresenter)``
+    /// ``SwiftUICore/View/presentError(_:with:)``
     /// with the ``FlowErrorPresenter/alert`` presenter.
     public struct Modifier: ViewModifier {
         @Binding var flowError: FlowError?

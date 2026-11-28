@@ -56,8 +56,8 @@ public struct FlowErrorHandlerChain: FlowErrorHandler {
     /// ```
     ///
     /// The chain of handlers in the SwiftUI environment always ends with
-    /// the ready-made handling of `CancellationError`, `CocoaError`, and
-    /// `URLError` provided by FlowErrorKit (see
+    /// the ready-made handling that FlowErrorKit provides for
+    /// `CancellationError`, `CocoaError`, and `URLError` (see
     /// ``SwiftUICore/EnvironmentValues/errorHandler``). In the above
     /// example, FlowErrorKit handles the `URLError` unwrapped by
     /// `ClientErrorHandler`.

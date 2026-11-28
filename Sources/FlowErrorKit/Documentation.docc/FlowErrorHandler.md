@@ -86,7 +86,7 @@ struct MyView: View {
 }
 ```
 
-The chain always ends with the ready-made handling of `CancellationError`, `CocoaError`, and `URLError` provided by FlowErrorKit. Because it comes last, the registered handlers can customize the handling of those errors. Finally, if no error handler has presented or cancelled the flow error, it is presented with a default presentation (see ``FlowErrorHandling/errorPresentation``).
+The chain always ends with the ready-made handling that FlowErrorKit provides for `CancellationError`, `CocoaError`, and `URLError`. Because it comes last, the registered handlers can customize the handling of those errors. Finally, if no error handler has presented or cancelled the flow error, it is presented with a default presentation (see ``FlowErrorHandling/errorPresentation``).
 
 The chain of handlers that apply to a view is available in the ``SwiftUICore/EnvironmentValues/errorHandler`` environment value.
 
@@ -141,7 +141,7 @@ An error handler must not perform the actions of the flow error: the presenter a
 
 ### Observable Objects as FlowError Handlers
 
-When an observable object conforms to `FlowErrorHandler`, it can update its inner state for particular flow errors, thrown anywhere in the view hierarchy.
+When an observable object conforms to `FlowErrorHandler`, it can update its inner state for particular flow errors, presented anywhere in the view hierarchy.
 
 In the example below, a form submission may fail because the user session has expired. Instead of presenting an alert, the session model, installed at the root of the app, signs the user out:
 
@@ -225,9 +225,7 @@ extension FlowErrorHandler where Self == FlowErrorHandlerChain {
 }
 ```
 
-The chain only contains the handlers of the application: the ready-made handling provided by FlowErrorKit always comes last, after all registered handlers.
-
-This chain is then registered in the app, and in every preview:
+Register this chain in the app, and in every preview:
 
 ```swift
 WindowGroup { RootView() }
@@ -238,6 +236,8 @@ WindowGroup { RootView() }
         .handleError(with: .appErrorHandlers)
 }
 ```
+
+Once registered with `handleError`, the application handlers run before the ready-made handling that FlowErrorKit provides for `CancellationError`, `CocoaError`, and `URLError`.
 
 ## Topics
 

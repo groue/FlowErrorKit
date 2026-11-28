@@ -31,9 +31,10 @@ In all cases, you must follow the contract documented by the
   of a flow error, and, whenever possible, to never leave a flow error
   unattended.
 - Read the chain of handlers with `@Environment(\.errorHandler)`, and
-  call `errorHandler.handle(flowError)` whenever the bound flow error
-  changes. All flow error instances must be handled, once, as soon as
-  possible.
+  call `errorHandler.handle(flowError)` for every distinct `id` of the
+  bound flow error, including when the view appears
+  (`.onChange(of: flowError?.id, initial: true)`). All flow error
+  instances must be handled, once, as soon as possible.
 - When the result of `errorHandler.handle(flowError)` has a nil
   `errorPresentation` property, it means that a handler cancelled the
   presentation: you must call `flowError.discard(.presentationCancelled)`,

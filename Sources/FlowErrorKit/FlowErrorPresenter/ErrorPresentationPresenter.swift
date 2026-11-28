@@ -4,7 +4,7 @@ import SwiftUI
 /// when a flow error occurs.
 ///
 /// You don't create this type directly: use
-/// ``SwiftUICore/View/presentError(_:with:)-(_,FlowErrorPresenter)``
+/// ``SwiftUICore/View/presentError(_:with:)``
 /// with the ``FlowErrorPresenter/errorPresentationView`` or
 /// ``FlowErrorPresenter/errorPresentationView(_:)`` presenter.
 public struct ErrorPresentationPresenter<ErrorContent: View> {
@@ -16,7 +16,7 @@ extension ErrorPresentationPresenter: FlowErrorPresenter {
     /// view content.
     ///
     /// You don't create this type directly: use
-    /// ``SwiftUICore/View/presentError(_:with:)-(_,FlowErrorPresenter)``
+    /// ``SwiftUICore/View/presentError(_:with:)``
     /// with the ``FlowErrorPresenter/errorPresentationView`` or
     /// ``FlowErrorPresenter/errorPresentationView(_:)`` presenter.
     public struct Modifier: ViewModifier {
@@ -152,6 +152,18 @@ extension FlowErrorPresenter where Self == ErrorPresentationPresenter<ErrorPrese
     /// by setting `flowError` to nil, as the `load()` method does in the
     /// sample code above.
     ///
+    /// Once the user has selected an action, the buttons of the error view
+    /// are disabled. To let the user select an action again, such as an
+    /// "Open Settings" action after they come back from the Settings
+    /// application, create the flow error with the
+    /// `allowMultipleActionExecutions` flag (see
+    /// ``FlowError/init(error:allowMultipleActionExecutions:)``).
+    ///
+    /// When the view presents a new flow error while the error view is
+    /// displayed, the new flow error replaces the previous one. If the user
+    /// has not selected any action of the previous flow error, its cancel
+    /// action is run.
+    ///
     /// ## Discarding the Presented Error
     ///
     /// The presented flow error is not discarded when the view
@@ -162,7 +174,7 @@ extension FlowErrorPresenter where Self == ErrorPresentationPresenter<ErrorPrese
     /// action runs:
     ///
     /// ```swift
-    /// flowError?.discard(.presentationCancelled)
+    /// flowError?.discard()
     /// ```
     public static var errorPresentationView: Self {
         ErrorPresentationPresenter(errorContent: { ErrorPresentationView($0) })

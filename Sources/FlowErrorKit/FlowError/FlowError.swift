@@ -45,7 +45,7 @@ import SwiftUI
     /// The caught error.
     public private(set) var error: any Error
     
-    /// A customized error title.
+    /// An error title that describes the failed operation.
     ///
     /// To set the title, use ``withTitle(_:)-(LocalizedStringKey)``.
     public private(set) var title: TextSource?
@@ -86,14 +86,23 @@ import SwiftUI
     /// A closure to run at the end of all error actions.
     private(set) var finally: (@MainActor () -> Void)?
     
-    /// A Boolean value indicating whether an error action can be
+    /// An observable value indicating whether an error action can be
     /// performed.
     ///
-    /// It becomes false once an action is performed, or once the flow
-    /// error is discarded, unless the flow error was created with the
-    /// `allowMultipleActionExecutions` flag.
+    /// Check this property when you implement custom error presentation
+    /// (see <doc:FlowErrorPresenter#Implementing-a-custom-presenter>),
+    /// before letting the application user perform an action with
+    /// ``performAction(_:)`` or ``performCancelAction()``. It becomes false
+    /// once an action is performed, unless the flow error was created with
+    /// the `allowMultipleActionExecutions` flag.
     ///
-    /// This property is observable.
+    /// If ``performAction(_:)`` or ``performCancelAction()`` is called
+    /// when this property is false, the action is executed, but an issue is
+    /// reported: a runtime warning when the app runs in the debugger, or a
+    /// test failure in tests. This issue reveals a bug in the error
+    /// presentation logic that needs to be addressed: at most one action
+    /// should be executed for flow errors created without the
+    /// `allowMultipleActionExecutions` flag.
     public var canPerformAction: Bool {
         executionToken.canExecute
     }
@@ -244,16 +253,32 @@ extension FlowError: CustomStringConvertible {
 // MARK: - Performing Actions
 
 extension FlowError {
-    /// Performs the specified action, followed by the `finally` closure.
+    /// Performs the specified action.
     ///
+    /// Call this method when you implement custom error presentation
+    /// (see <doc:FlowErrorPresenter#Implementing-a-custom-presenter>), in
+    /// order to execute the retry action, or a supplementary action:
+    ///
+    /// ```swift
+    /// if let retryAction = flowError.retryAction {
+    ///     Button("Retry") {
+    ///         flowError.performAction(retryAction)
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// It performs the specified action, followed by the `finally` closure.
     /// When the action is a supplementary action, the cancel action is
     /// run first, with the ``ErrorCancelReason/supplementaryActionPerformed``
     /// reason.
     ///
-    /// Call this method only when ``canPerformAction`` is true. Otherwise,
-    /// the action is performed anyway, and an issue is reported: a
-    /// runtime warning when the app runs in the debugger, or a test
-    /// failure in tests.
+    /// If the ``canPerformAction`` property is false when this method is
+    /// called, the action is executed, but an issue is reported: a runtime
+    /// warning when the app runs in the debugger, or a test failure in
+    /// tests. This issue reveals a bug in the error presentation logic that
+    /// needs to be addressed: at most one action should be executed for
+    /// flow errors created without the
+    /// `allowMultipleActionExecutions` flag.
     ///
     /// - precondition: The action argument must be available in the
     ///   flow error, as the retry action, or a supplementary action.
@@ -276,14 +301,30 @@ extension FlowError {
         }
     }
     
-    /// Unconditionally performs the cancel action, with the
+    /// Performs the cancel action.
+    ///
+    /// Call this method when you implement custom error presentation
+    /// (see <doc:FlowErrorPresenter#Implementing-a-custom-presenter>), in
+    /// order to execute the cancel action when the application user taps
+    /// a Cancel button:
+    ///
+    /// ```swift
+    /// Button(role: .cancel) {
+    ///     flowError.performCancelAction()
+    /// }
+    /// ```
+    ///
+    /// It performs the cancel action, with the
     /// ``ErrorCancelReason/userCancelled`` reason, followed by the
     /// `finally` closure.
     ///
-    /// Call this method only when ``canPerformAction`` is true. Otherwise,
-    /// the cancel action is performed anyway, and an issue is reported: a
-    /// runtime warning when the app runs in the debugger, or a test
-    /// failure in tests.
+    /// If the ``canPerformAction`` property is false when this method is
+    /// called, the cancel action is executed, but an issue is reported: a
+    /// runtime warning when the app runs in the debugger, or a test failure
+    /// in tests. This issue reveals a bug in the error presentation logic that
+    /// needs to be addressed: at most one action should be executed for
+    /// flow errors created without the
+    /// `allowMultipleActionExecutions` flag.
     ///
     /// When a flow error is programmatically discarded, prefer the
     /// ``discard(_:)`` method.
@@ -294,17 +335,35 @@ extension FlowError {
         }
     }
     
-    /// Performs the cancel action, followed by the `finally` closure,
-    /// unless an action was previously executed.
+    /// Performs the cancel action, unless an action was
+    /// previously executed.
+    ///
+    /// Call this method when you implement custom error presentation
+    /// (see <doc:FlowErrorPresenter#Implementing-a-custom-presenter>), in
+    /// order to complete the handling of a flow error without letting the
+    /// application user choose an action:
+    ///
+    /// ```swift
+    /// guard let errorPresentation else {
+    ///     // Error can't be presented.
+    ///     flowError.discard()
+    ///     return
+    /// }
+    /// ```
+    ///
+    /// If an error action was already executed with
+    /// ``performCancelAction()``, ``performAction(_:)``, or this `discard`
+    /// method, nothing is done and the result is false. Otherwise, the
+    /// cancel action is executed, followed by the `finally` closure, and
+    /// the result is true.
     ///
     /// When executing the action from an explicit "Cancel" button, prefer
     /// the ``performCancelAction()`` method.
     ///
     /// - parameter reason: The reason why the cancel action is run.
-    ///
     /// - Returns: Whether the cancel action was executed.
     @discardableResult
-    public func discard(_ reason: ErrorCancelReason) -> Bool {
+    public func discard(_ reason: ErrorCancelReason = .presentationCancelled) -> Bool {
         executionToken.executeUnlessExecuted {
             cancelAction?(reason)
             finally?()
@@ -342,7 +401,9 @@ extension FlowError {
     /// If the flow error already has a cancel action, both closures are
     /// run, the existing one first, and the existing title is preserved.
     ///
-    /// - parameter action: A closure called when the error is cancelled.
+    /// - parameter action: A closure called when the user dismisses
+    ///   the error, and in the other situations described by
+    ///   ``ErrorCancelReason``.
     public func onCancel(
         action: @escaping @MainActor (_ cancelReason: ErrorCancelReason) -> Void
     ) -> FlowError {
@@ -359,7 +420,9 @@ extension FlowError {
     ///
     /// - parameter title: The title of the "Cancel" button, displayed
     ///   without localization.
-    /// - parameter action: A closure called when the error is cancelled.
+    /// - parameter action: A closure called when the user dismisses
+    ///   the error, and in the other situations described by
+    ///   ``ErrorCancelReason``.
     @_disfavoredOverload
     public func onCancel(
         _ title: some StringProtocol,
@@ -376,7 +439,9 @@ extension FlowError {
     /// existing one.
     ///
     /// - parameter title: The localized title of the "Cancel" button.
-    /// - parameter action: A closure called when the error is cancelled.
+    /// - parameter action: A closure called when the user dismisses
+    ///   the error, and in the other situations described by
+    ///   ``ErrorCancelReason``.
     public func onCancel(
         _ title: LocalizedStringKey,
         action: @escaping @MainActor (_ cancelReason: ErrorCancelReason) -> Void
@@ -392,7 +457,9 @@ extension FlowError {
     /// existing one.
     ///
     /// - parameter title: The localized title of the "Cancel" button.
-    /// - parameter action: A closure called when the error is cancelled.
+    /// - parameter action: A closure called when the user dismisses
+    ///   the error, and in the other situations described by
+    ///   ``ErrorCancelReason``.
     @_disfavoredOverload
     public func onCancel(
         _ title: LocalizedStringResource,
@@ -411,7 +478,9 @@ extension FlowError {
     ///
     /// - parameter title: The title of the "Cancel" button, displayed
     ///   without localization.
-    /// - parameter action: A closure called when the error is cancelled.
+    /// - parameter action: A closure called when the user dismisses
+    ///   the error, and in the other situations described by
+    ///   ``ErrorCancelReason``.
     public func onCancel(
         verbatim title: String,
         action: @escaping @MainActor (_ cancelReason: ErrorCancelReason) -> Void
@@ -559,9 +628,6 @@ extension FlowError {
     
     /// Returns a flow error with an extra supplementary action.
     ///
-    /// This method is useful for permission denied errors: add an
-    /// "Open Settings" action.
-    ///
     /// If the user selects this action, the cancel action is run first,
     /// with the ``ErrorCancelReason/supplementaryActionPerformed`` reason.
     ///
@@ -609,9 +675,6 @@ extension FlowError {
     }
     
     /// Returns a flow error with an extra supplementary action.
-    ///
-    /// This method is useful for permission denied errors: add an
-    /// "Open Settings" action.
     ///
     /// If the user selects this action, the cancel action is run first,
     /// with the ``ErrorCancelReason/supplementaryActionPerformed`` reason.

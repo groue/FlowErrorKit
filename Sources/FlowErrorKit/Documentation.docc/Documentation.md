@@ -29,7 +29,7 @@ For example, your application may:
 
 Presenting a flow error means displaying the error in SwiftUI views.
 
-- ``SwiftUICore/View/presentError(_:with:)-(_,FlowErrorPresenter)``
+- ``SwiftUICore/View/presentError(_:with:)``
 - ``FlowErrorPresenter``
 
 ### Handling Errors from SwiftUI Views
