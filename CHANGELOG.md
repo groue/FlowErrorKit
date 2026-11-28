@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+- **Fix**: The `alert` presenter discards the presented flow error when the presenting view disappears while the alert is on screen. Its `onCancel` closure runs with the `.presentationCancelled` reason, and its `finally` closure runs. Before, neither closure ran.
+
 ## 0.3.1
 
 Released November 28, 2026
