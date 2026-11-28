@@ -20,14 +20,14 @@ struct TextSourceAlertTests {
     }
 
     struct TestView: View {
-        var model: Model
+        @Bindable var model: Model
 
         var body: some View {
             Color.clear
                 .onAppear { model.appearCount += 1 }
                 .alert(
                     model.title,
-                    item: Binding(get: { model.item }, set: { model.item = $0 }),
+                    item: $model.item,
                     actions: { _ in Button("OK") { } },
                     message: { _ in EmptyView() })
         }

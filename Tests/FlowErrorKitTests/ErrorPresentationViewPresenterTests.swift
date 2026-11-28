@@ -29,7 +29,7 @@ struct ErrorPresentationViewPresenterTests {
     }
 
     struct HostView: View {
-        var model: Model
+        @Bindable var model: Model
 
         var body: some View {
             Color.clear
@@ -38,7 +38,7 @@ struct ErrorPresentationViewPresenterTests {
                     model.contentAppearCount += 1
                 }
                 .presentError(
-                    Binding(get: { model.flowError }, set: { model.flowError = $0 }),
+                    $model.flowError,
                     with: .errorPresentationView { errorPresentation in
                         Color.clear.onChange(of: errorPresentation.flowError.id, initial: true) {
                             model.presentedFlowErrorID = errorPresentation.flowError.id

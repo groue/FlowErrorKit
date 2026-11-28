@@ -30,23 +30,23 @@ struct ProgrammaticDismissalTests {
     }
 
     struct AlertView: View {
-        var model: Model
+        @Bindable var model: Model
         
         var body: some View {
             Color.clear.presentError(
-                Binding(get: { model.flowError }, set: { model.flowError = $0 }),
+                $model.flowError,
                 with: .alert)
         }
     }
     
     struct ErrorPresentationHostView: View {
-        var model: Model
+        @Bindable var model: Model
 
         var body: some View {
             Color.clear
                 .onAppear { model.presentedFlowErrorID = nil }
                 .presentError(
-                    Binding(get: { model.flowError }, set: { model.flowError = $0 }),
+                    $model.flowError,
                     with: .errorPresentationView { errorPresentation in
                         Color.clear.onAppear {
                             model.presentedFlowErrorID = errorPresentation.flowError.id
