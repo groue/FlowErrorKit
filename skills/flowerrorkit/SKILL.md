@@ -143,7 +143,7 @@ struct NewsView: View {
         do {
             try await store.refresh()
         } catch {
-            _ = errorHandler.handle(FlowError(error: error))
+            _ = errorHandler.handle(error)
         }
     }
 
@@ -452,6 +452,14 @@ an action. Follow the rules below.
   Why: a new flow error loses the identity of the caught error (see
   [Creating and handling flow
   errors](#creating-and-handling-flow-errors)).
+- Never add `onCancel` or `finally` code in a handler. Put it at the
+  catch site. To change the title of the cancel button, a handler
+  passes a closure that does nothing: `.onCancel("OK") { _ in }`.
+
+  Why: the code that a handler adds is not guaranteed to run. For
+  example, when a view discards the flow error it holds
+  (`flowError?.discard()`), only the closures added at the catch site
+  run.
 - When a handler appends an action, or starts handling more errors,
   review the in-place presentations that may now display the action,
   and set `allowMultipleActionExecutions` where needed (see [In-place

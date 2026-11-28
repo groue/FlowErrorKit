@@ -16,6 +16,11 @@
     /// ``FlowError/appendingAction(_:)``, or ``FlowError/withError(_:)``.
     /// For examples, see <doc:FlowErrorHandler#Adjusting-Actions-and-Presentations>.
     ///
+    /// Don't add code to run with ``FlowError/onCancel(action:)`` or
+    /// ``FlowError/finally(action:)``: this code is not guaranteed to
+    /// run. For example, it does not run when the application discards
+    /// the flow error it has presented, with ``FlowError/discard(_:)``.
+    ///
     /// - Note: Don't invoke any action of the flow error from this method.
     /// The cancel action is automatically performed when you return
     /// ``FlowErrorHandling/cancel``, and the user will select their desired

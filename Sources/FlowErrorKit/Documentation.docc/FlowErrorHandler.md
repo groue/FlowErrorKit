@@ -137,7 +137,7 @@ struct UpgradeRequiredErrorHandler: FlowErrorHandler {
 }
 ```
 
-An error handler must not perform the actions of the flow error: the presenter and the user do (see ``handle(_:)-(FlowError)``).
+An error handler must not perform the actions of the flow error: the presenter and the user do. Nor must it add code to run with ``FlowError/onCancel(action:)`` or ``FlowError/finally(action:)``, because this code is not guaranteed to run (see ``handle(_:)-(FlowError)``).
 
 ### Observable Objects as FlowError Handlers
 
