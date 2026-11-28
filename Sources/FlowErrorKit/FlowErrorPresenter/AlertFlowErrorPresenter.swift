@@ -22,34 +22,62 @@ extension AlertFlowErrorPresenter: FlowErrorPresenter {
             var flowError: FlowError { errorPresentation.flowError }
         }
         
+        private enum Phase {
+            /// No alert.
+            case idle
+            
+            /// The alert waits for presentation (see the iOS workaround in
+            /// `handleFlowError`).
+            case pending(AlertItem)
+            
+            /// The alert is presented.
+            case presented(AlertItem)
+            
+            /// The alert item, whether it is pending or presented.
+            var alertItem: AlertItem? {
+                switch self {
+                case .idle:
+                    nil
+                case let .pending(item), let .presented(item):
+                    item
+                }
+            }
+            
+            /// The alert item, only if it is presented: nil while the
+            /// alert is pending.
+            var presentedAlertItem: AlertItem? {
+                if case let .presented(item) = self { item } else { nil }
+            }
+        }
+        
         @Environment(\.errorHandler) private var errorHandler
-        @State private var alertItem: AlertItem?
-        /// The alert item that waits for presentation (see the iOS
-        /// workaround in `handleFlowError`).
-        @State private var pendingAlertItem: AlertItem?
-        /// The id of a flow error that was not presented, because another
-        /// alert was presented or about to be presented, and that is still
-        /// held by the `flowError` binding.
-        @State private var unpresentedFlowErrorID: FlowError.ID?
+        
+        /// The presentation phase. Unless idle, the `flowError` binding
+        /// holds the flow error of the alert.
+        @State private var phase = Phase.idle
+        
         private var dismissableAlertItem: Binding<AlertItem?> {
             Binding(
-                get: { alertItem },
-                set: { newItem in
-                    if newItem == nil, let alertItem {
-                        // SwiftUI also dismisses the alert without any
-                        // user action, when the view disappears. No-op
-                        // if the user has selected an action.
-                        alertItem.flowError.discard()
-
-                        // Set flowError to nil, unless it was set to a new
-                        // flow error (from an error action, for example).
-                        if let flowError,
-                           flowError.id == alertItem.id || flowError.id == unpresentedFlowErrorID
-                        {
-                            self.flowError = nil
-                        }
+                get: { phase.presentedAlertItem },
+                set: { newItem, transaction in
+                    // SwiftUI only sets nil, when the alert is dismissed.
+                    guard newItem == nil, let item = phase.presentedAlertItem else {
+                        return
                     }
-                    alertItem = newItem
+
+                    // SwiftUI also dismisses the alert without any user
+                    // action, when the view disappears. No-op if the user
+                    // has selected an action.
+                    item.flowError.discard()
+
+                    withTransaction(transaction) {
+                        // Set flowError to nil, unless an action has set it
+                        // to a new flow error.
+                        if flowError?.id == item.id {
+                            flowError = nil
+                        }
+                        phase = .idle
+                    }
                 })
         }
         
@@ -69,59 +97,54 @@ extension AlertFlowErrorPresenter: FlowErrorPresenter {
         }
         
         private func handleFlowError() {
-            if let flowError {
-                if let errorPresentation = errorHandler.handle(flowError).errorPresentation {
-                    if alertItem != nil || pendingAlertItem != nil {
-                        // Can't present because an alert is already
-                        // presented, or about to be presented.
-                        flowError.discard()
-                        unpresentedFlowErrorID = flowError.id
-                    } else {
-                        // Present an alert.
-                        // The delay is a workaround for an iOS bug.
-                        let item = AlertItem(errorPresentation: errorPresentation)
-                        pendingAlertItem = item
-                        Task {
-                            try? await Task.sleep(for: .seconds(0.1))
-                            // Present unless the flow error was
-                            // dismissed in the meantime.
-                            if pendingAlertItem?.id == item.id {
-                                pendingAlertItem = nil
-                                alertItem = item
-                            }
-                        }
-                    }
-                } else {
-                    // Presentation cancelled by error handler.
-                    flowError.discard()
-                    // Don't discard current alert, if any
-                    if alertItem == nil && pendingAlertItem == nil {
-                        self.flowError = nil
-                    } else {
-                        unpresentedFlowErrorID = flowError.id
-                    }
-                }
-            } else {
+            guard let flowError else {
                 // Flow error programmatically dismissed: remove the alert
                 // without performing any action.
-                pendingAlertItem = nil
-                alertItem = nil
-                unpresentedFlowErrorID = nil
+                phase = .idle
+                return
+            }
+            
+            if let item = phase.alertItem {
+                if flowError.id == item.id {
+                    // The binding was restored below.
+                    return
+                }
+                
+                // Can't present because an alert is already presented, or
+                // about to be presented. Discard the new flow error, and
+                // restore the binding.
+                _ = errorHandler.handle(flowError)
+                flowError.discard()
+                self.flowError = item.flowError
+                return
+            }
+            
+            guard let errorPresentation = errorHandler.handle(flowError).errorPresentation else {
+                // Presentation cancelled by error handler.
+                flowError.discard()
+                self.flowError = nil
+                return
+            }
+            
+            // Present an alert.
+            // The delay is a workaround for an iOS bug.
+            let item = AlertItem(errorPresentation: errorPresentation)
+            phase = .pending(item)
+            Task {
+                try? await Task.sleep(for: .seconds(0.1))
+                // Present unless the flow error was dismissed in the
+                // meantime.
+                if case let .pending(pendingItem) = phase, pendingItem.id == item.id {
+                    phase = .presented(item)
+                }
             }
         }
         
         private func didDisappear() {
+            phase = .idle
             if let flowError {
                 flowError.discard()
                 self.flowError = nil
-            }
-            if let pendingAlertItem {
-                pendingAlertItem.flowError.discard()
-                self.pendingAlertItem = nil
-            }
-            if let alertItem {
-                alertItem.flowError.discard()
-                self.alertItem = nil
             }
         }
         
@@ -153,7 +176,7 @@ extension AlertFlowErrorPresenter: FlowErrorPresenter {
         }
         
         private func perform(_ presentedAlertItem: AlertItem, action: (FlowError) -> Void) {
-            guard alertItem?.id == presentedAlertItem.id else {
+            guard phase.presentedAlertItem?.id == presentedAlertItem.id else {
                 // This alert item is no longer presented
                 return
             }
@@ -162,7 +185,7 @@ extension AlertFlowErrorPresenter: FlowErrorPresenter {
         
         
         private var alertTitle: TextSource? {
-            alertItem?.errorPresentation.title
+            phase.presentedAlertItem?.errorPresentation.title
         }
         
         /// Returns the alert message, as a single `Text`, because alerts
