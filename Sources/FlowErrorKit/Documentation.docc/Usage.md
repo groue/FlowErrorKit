@@ -140,8 +140,8 @@ struct MyApp: App {
     var body: some Scene {
         WindowGroup {
             MyView()
-                .handleError(with: CLErrorHandler())
         }
+        .handleError(with: CLErrorHandler())
     }
 }
 
