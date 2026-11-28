@@ -37,9 +37,8 @@ In all cases, you must follow the contract documented by the
   instances must be handled, once, as soon as possible.
 - When the result of `errorHandler.handle(flowError)` has a nil
   `errorPresentation` property, it means that a handler cancelled the
-  presentation: you must call `flowError.discard(.presentationCancelled)`,
-  and adjust the view according to the desired behavior of the custom
-  presentation.
+  presentation: you must call `flowError.discard()`, and adjust the view
+  according to the desired behavior of the custom presentation.
 - When the custom presentation has no error to present, make sure the
   flow error binding is set to nil, so that the caller knows that no
   error is presented.
@@ -51,8 +50,7 @@ In all cases, you must follow the contract documented by the
   the custom presentation.
 - When a new flow error is set while another one is presented, either
   replace the presented one, or ignore the new one. In both cases, call
-  `discard(.presentationCancelled)` on the flow error that is not
-  presented.
+  `discard()` on the flow error that is not presented.
 - When the binding is set to nil from the parent view, stop presenting
   the error, but do not perform any action. It is the code that
   programmatically cancels the error presentation that is responsible
@@ -60,10 +58,10 @@ In all cases, you must follow the contract documented by the
   custom presentation.
 - When the view reaches a state where it is no longer possible for the
   app user to select any action of a presented flow error, call
-  `discard(.presentationCancelled)` on it, and set the binding to nil if
-  the desired behavior of the custom presentation is to stop presenting
-  the error in such a case. Do so only when you can tell it for sure:
-  never from `.onDisappear`, nor from a `deinit`.
+  `discard()` on it, and set the binding to nil if the desired behavior
+  of the custom presentation is to stop presenting the error in such a
+  case. Do so only when you can tell it for sure: never from
+  `.onDisappear`, nor from a `deinit`.
 
   Why: when the user switches to another tab and back, a presentation
   that was displayed in the view comes back on screen, and the user can

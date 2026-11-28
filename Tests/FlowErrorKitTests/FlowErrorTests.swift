@@ -315,7 +315,7 @@ struct FlowErrorTests {
             .onCancel { executions.append("cancel 2 \($0)") }
             .onRetry { executions.append("retry") }
             .finally { executions.append("finally 2") }
-        flowError.discard(.presentationCancelled)
+        flowError.discard()
         #expect(executions == [
             "cancel 1 presentationCancelled",
             "cancel 2 presentationCancelled",

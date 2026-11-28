@@ -68,7 +68,7 @@ extension AlertFlowErrorPresenter: FlowErrorPresenter {
                     if alertItem != nil || pendingAlertItem != nil {
                         // Can't present because an alert is already
                         // presented, or about to be presented.
-                        flowError.discard(.presentationCancelled)
+                        flowError.discard()
                         unpresentedFlowErrorID = flowError.id
                     } else {
                         // Present an alert.
@@ -87,7 +87,7 @@ extension AlertFlowErrorPresenter: FlowErrorPresenter {
                     }
                 } else {
                     // Presentation cancelled by error handler.
-                    flowError.discard(.presentationCancelled)
+                    flowError.discard()
                     // Don't discard current alert, if any
                     if alertItem == nil && pendingAlertItem == nil {
                         self.flowError = nil
@@ -106,15 +106,15 @@ extension AlertFlowErrorPresenter: FlowErrorPresenter {
         
         private func didDisappear() {
             if let flowError {
-                flowError.discard(.presentationCancelled)
+                flowError.discard()
                 self.flowError = nil
             }
             if let pendingAlertItem {
-                pendingAlertItem.flowError.discard(.presentationCancelled)
+                pendingAlertItem.flowError.discard()
                 self.pendingAlertItem = nil
             }
             if let alertItem {
-                alertItem.flowError.discard(.presentationCancelled)
+                alertItem.flowError.discard()
                 self.alertItem = nil
             }
         }

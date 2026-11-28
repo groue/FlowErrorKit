@@ -41,12 +41,12 @@ extension ErrorPresentationPresenter: FlowErrorPresenter {
                 if let newPresentation = errorHandler.handle(flowError).errorPresentation {
                     // Replace the current presentation, if any.
                     if let errorPresentation {
-                        errorPresentation.flowError.discard(.presentationCancelled)
+                        errorPresentation.flowError.discard()
                     }
                     errorPresentation = newPresentation
                 } else {
                     // Presentation cancelled by error handler.
-                    flowError.discard(.presentationCancelled)
+                    flowError.discard()
                     // Don't discard current presentation, if any
                     if errorPresentation == nil {
                         self.flowError = nil
