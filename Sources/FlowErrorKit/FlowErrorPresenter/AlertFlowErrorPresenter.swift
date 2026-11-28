@@ -35,13 +35,19 @@ extension AlertFlowErrorPresenter: FlowErrorPresenter {
             Binding(
                 get: { alertItem },
                 set: { newItem in
-                    // Set flowError to nil when alert is dismissed, unless
-                    // it was set to a new flow error (from an error action,
-                    // for example).
-                    if newItem == nil, let alertItem, let flowError,
-                       flowError.id == alertItem.id || flowError.id == unpresentedFlowErrorID
-                    {
-                        self.flowError = nil
+                    if newItem == nil, let alertItem {
+                        // SwiftUI also dismisses the alert without any
+                        // user action, when the view disappears. No-op
+                        // if the user has selected an action.
+                        alertItem.flowError.discard()
+
+                        // Set flowError to nil, unless it was set to a new
+                        // flow error (from an error action, for example).
+                        if let flowError,
+                           flowError.id == alertItem.id || flowError.id == unpresentedFlowErrorID
+                        {
+                            self.flowError = nil
+                        }
                     }
                     alertItem = newItem
                 })
