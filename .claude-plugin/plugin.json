@@ -1,6 +1,6 @@
 {
   "name": "flowerrorkit",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Skill for writing SwiftUI code that uses FlowErrorKit: catching, handling, and presenting errors.",
   "author": {
     "name": "Gwendal Roué"
