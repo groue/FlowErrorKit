@@ -13,7 +13,7 @@ extension EnvironmentValues {
     /// ``SwiftUICore/View/handleError(with:)`` and
     /// ``SwiftUI/Scene/handleError(with:)``, followed by the ready-made
     /// handling that FlowErrorKit provides for `CancellationError`,
-    /// `CocoaError`, and `URLError`.
+    /// `CocoaError`, `URLError`, and `POSIXError`.
     ///
     /// This ready-made handling comes last, so that the handlers you
     /// register can customize the handling of those errors.

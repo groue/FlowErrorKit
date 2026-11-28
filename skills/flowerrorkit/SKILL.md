@@ -472,8 +472,8 @@ one, presents it, or cancels it. Handlers registered closer to the
 presenting view come first. In a
 `FlowErrorHandlerChain`, the first handler of the array comes first.
 The built-in handlers of FlowErrorKit, for `CancellationError`,
-`CocoaError`, and `URLError`, always come last, after all registered
-handlers.
+`CocoaError`, `URLError`, and `POSIXError`, always come last, after
+all registered handlers.
 
 Gather the application-wide handlers in a single chain, and register
 this same chain in the app and in every preview:

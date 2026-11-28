@@ -10,7 +10,7 @@
 
 This package helps SwiftUI applications catch errors, present them to the user, and respond to the user's choice (cancel, retry, or any other action).
 
-Generally speaking, views catch errors and present them with an alert or another technique. Error handlers, registered in the SwiftUI environment, decide how specific errors are presented, and can perform side effects such as signing the user out, requesting an app update, or letting the user open the Settings application. Built-in handlers take care of `CancellationError`, `CocoaError`, and `URLError`, and you can add your own for the errors specific to your app.
+Generally speaking, views catch errors and present them with an alert or another technique. Error handlers, registered in the SwiftUI environment, decide how specific errors are presented, and can perform side effects such as signing the user out, requesting an app update, or letting the user open the Settings application. Built-in handlers take care of `CancellationError`, `CocoaError`, `URLError`, and `POSIXError`, and you can add your own for the errors specific to your app.
 
 ## Usage
 

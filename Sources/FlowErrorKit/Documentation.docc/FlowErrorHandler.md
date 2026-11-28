@@ -86,7 +86,7 @@ struct MyView: View {
 }
 ```
 
-The chain always ends with the ready-made handling that FlowErrorKit provides for `CancellationError`, `CocoaError`, and `URLError`. Because it comes last, the registered handlers can customize the handling of those errors. Finally, if no error handler has presented or cancelled the flow error, it is presented with a default presentation (see ``FlowErrorHandling/errorPresentation``).
+The chain always ends with the ready-made handling that FlowErrorKit provides for `CancellationError`, `CocoaError`, `URLError`, and `POSIXError`. Because it comes last, the registered handlers can customize the handling of those errors. Finally, if no error handler has presented or cancelled the flow error, it is presented with a default presentation (see ``FlowErrorHandling/errorPresentation``).
 
 The chain of handlers that apply to a view is available in the ``SwiftUICore/EnvironmentValues/errorHandler`` environment value.
 
@@ -237,7 +237,7 @@ WindowGroup { RootView() }
 }
 ```
 
-Once registered with `handleError`, the application handlers run before the ready-made handling that FlowErrorKit provides for `CancellationError`, `CocoaError`, and `URLError`.
+Once registered with `handleError`, the application handlers run before the ready-made handling that FlowErrorKit provides for `CancellationError`, `CocoaError`, `URLError`, and `POSIXError`.
 
 ## Topics
 

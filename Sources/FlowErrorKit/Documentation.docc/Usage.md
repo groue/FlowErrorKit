@@ -120,7 +120,7 @@ The view does not have to check whether the error can be retried before it provi
 
 ### Handle specific errors with flow error handlers
 
-FlowErrorKit comes with ready-made handling of `CancellationError`, `CocoaError`, and `URLError`, so that they are handled in the best way for the application user. Other errors are, by default, presented with a generic, localized, title: "An Error Occurred". In the Debug configuration, the built-in presentations (alerts and ``ErrorPresentationView``) also display the raw error, so that developers can see what went wrong.
+FlowErrorKit comes with ready-made handling of `CancellationError`, `CocoaError`, `URLError`, and `POSIXError`, so that they are handled in the best way for the application user. Other errors are, by default, presented with a generic, localized, title: "An Error Occurred". In the Debug configuration, the built-in presentations (alerts and ``ErrorPresentationView``) also display the raw error, so that developers can see what went wrong.
 
 Below is a screenshot that shows the default presentation of an unhandled error in an alert, when the library is compiled in the Debug configuration:
 

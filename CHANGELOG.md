@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+- New ready-made handler for `POSIXError`.
+
 ## 0.3.2
 
 Released November 28, 2026
